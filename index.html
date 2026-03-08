@@ -6,6 +6,7 @@
 <title>Exotic Utilities — Custom Discord Bots</title>
 <meta name="description" content="Premium custom Discord bots built to order. Moderation, tickets, ERLC integration, infraction systems — whatever your server needs, we build it.">
 <meta name="theme-color" content="#6390ff">
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -89,9 +90,7 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 }
 .nav-logo-icon {
   width: 38px; height: 38px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--blue), var(--accent));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 20px var(--blue-glow);
 }
 .nav-logo-text { font-size: 18px; font-weight: 700; }
@@ -264,6 +263,23 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 .step-card p { font-size: 14px; color: var(--gray); line-height: 1.6; position: relative; }
 
 /* ── Pricing ────────────────────────────── */
+.currency-toggle {
+  display: flex; justify-content: center; margin-bottom: 48px; gap: 0;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px; width: fit-content; margin-left: auto; margin-right: auto;
+}
+.currency-btn {
+  padding: 10px 28px; border-radius: 9px; border: none; cursor: pointer;
+  font-family: 'Outfit'; font-size: 14px; font-weight: 600;
+  background: transparent; color: var(--gray-lt); transition: all 0.25s;
+  display: flex; align-items: center; gap: 8px;
+}
+.currency-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; box-shadow: 0 0 20px var(--blue-glow);
+}
+.currency-btn:not(.active):hover { color: var(--white); }
+.currency-icon { font-size: 16px; }
 .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; align-items: start; }
 .price-card {
   border-radius: 20px; overflow: hidden;
@@ -427,9 +443,7 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 .footer-logo { display: flex; align-items: center; gap: 10px; }
 .footer-logo-icon {
   width: 28px; height: 28px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--blue), var(--accent));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
 }
 .footer-copy { font-size: 13px; color: var(--gray); }
 .footer-links { display: flex; gap: 24px; }
@@ -456,9 +470,56 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
   #cursor-dot, #cursor-ring { display: none !important; }
   #bg-canvas { display: none; }
 }
+/* ── Loading Screen ──────────────────────── */
+#loader {
+  position: fixed; inset: 0; z-index: 10000;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+#loader img {
+  width: 100px; height: 100px; object-fit: contain;
+  animation: loaderPulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 30px rgba(99,144,255,0.4));
+}
+#loader-bar-wrap {
+  width: 180px; height: 3px; background: var(--gray-dk);
+  border-radius: 3px; margin-top: 32px; overflow: hidden;
+}
+#loader-bar {
+  height: 100%; width: 0%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--accent));
+  box-shadow: 0 0 12px var(--blue-glow);
+  animation: loaderFill 2.6s ease-in-out forwards;
+}
+#loader-text {
+  margin-top: 18px; font-size: 13px; font-weight: 500;
+  color: var(--gray); letter-spacing: 3px; text-transform: uppercase;
+  animation: loaderFade 1.2s ease infinite alternate;
+}
+@keyframes loaderPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(99,144,255,0.4)); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 50px rgba(99,144,255,0.6)); }
+}
+@keyframes loaderFill { 0% { width: 0%; } 100% { width: 100%; } }
+@keyframes loaderFade { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+/* ── Logo Image (replaces text boxes) ──── */
+.nav-logo-img { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; }
+.footer-logo-img { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; }
+
 </style>
 </head>
 <body>
+
+<!-- Loading Screen -->
+<div id="loader">
+  <img src="logo.png" alt="Exotic Utilities">
+  <div id="loader-bar-wrap"><div id="loader-bar"></div></div>
+  <div id="loader-text">Loading</div>
+</div>
 
 <!-- Background Animation -->
 <canvas id="bg-canvas"></canvas>
@@ -479,7 +540,7 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 <nav class="nav" id="navbar">
   <div class="nav-inner">
     <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
-      <div class="nav-logo-icon">EU</div>
+      <div class="nav-logo-icon"><img src="logo.png" alt="EU" class="nav-logo-img"></div>
       <div class="nav-logo-text">Exotic <span>Utilities</span></div>
     </a>
     <div class="nav-links">
@@ -542,6 +603,10 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 <!-- Pricing -->
 <section class="section" id="pricing">
   <div class="reveal"><span class="section-label">Pricing</span><h2 class="section-title">Simple, Fair Pricing</h2></div>
+  <div class="reveal currency-toggle" id="currency-toggle">
+    <button class="currency-btn active" data-currency="usd"><span class="currency-icon">💵</span> USD</button>
+    <button class="currency-btn" data-currency="robux"><span class="currency-icon">🟢</span> Robux</button>
+  </div>
   <div class="pricing-grid" id="pricing-grid"></div>
   <p class="reveal price-note">Need something custom? <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact us</a> for a quote.</p>
 </section>
@@ -571,7 +636,7 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
 <!-- Footer -->
 <footer class="footer">
   <div class="footer-logo">
-    <div class="footer-logo-icon">EU</div>
+    <div class="footer-logo-icon"><img src="logo.png" alt="EU" class="footer-logo-img"></div>
     <span class="footer-copy">© 2025 Exotic Utilities</span>
   </div>
   <div class="footer-links">
@@ -609,18 +674,23 @@ const STEPS = [
 
 const PACKAGES = [
   {
-    name:"Basic", price:"5–10", tag:"Essential features and clean logs", icon:"⚡", popular:false,
-    commands:["/ban","/kick","/timeout","/warn","/purge","/slowmode","/say","/ping","/membercount","/rank","/leaderboard"],
+    name:"Basic", price:"5–10", robux:"500–1K", tag:"Essential features, sessions & clean logs", icon:"⚡", popular:false,
+    commands:["/ban","/unban","/kick","/timeout","/untimeout","/warn","/warnings","/clearwarns","/purge","/slowmode","/lock","/unlock","/mute","/unmute","/role","/nick","/say","/ping","/membercount","/rank","/leaderboard","/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote","/avatar","/serverinfo","/userinfo","/embed"],
     systems:[
-      { emoji:"🛡️", name:"Moderation System", desc:"ban, kick, timeout, warn" },
+      { emoji:"🛡️", name:"Moderation System", desc:"ban, unban, kick, timeout, mute, warn, purge, lock, role management" },
+      { emoji:"📋", name:"Warning System", desc:"warn, view warnings, clear warns per user" },
+      { emoji:"🔐", name:"Channel Management", desc:"lock, unlock, slowmode" },
       { emoji:"📊", name:"XP & Leveling System", desc:"XP, level ups, leaderboard" },
+      { emoji:"🚀", name:"Session System", desc:"startup, shutdown, full, vote announcements" },
       { emoji:"📸", name:"Photo Channel", desc:"auto star react on images" },
       { emoji:"🔔", name:"Join/Leave Logs", desc:"clean member tracking" },
+      { emoji:"📢", name:"Embed Builder", desc:"custom embeds via command" },
+      { emoji:"🔧", name:"Utility Commands", desc:"avatar, serverinfo, userinfo, nick" },
     ],
     includes: null,
   },
   {
-    name:"Advanced", price:"15–25", tag:"Tickets, moderation, sessions & custom systems", icon:"🔥", popular:true,
+    name:"Advanced", price:"15–25", robux:"1.5K–2.5K", tag:"Tickets, moderation, sessions & custom systems", icon:"🔥", popular:true,
     commands:["/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport","/infract","/infraction-view","/infraction-revoke","/infraction-wipe","/promote","/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote","/strike-leaderboard","/verify"],
     systems:[
       { emoji:"🎫", name:"Full Ticket System", desc:"dropdown panel, 3 types, claim, transcripts, auto close" },
@@ -632,7 +702,7 @@ const PACKAGES = [
     includes: "Everything in Basic",
   },
   {
-    name:"Premium", price:"30+", tag:"Fully custom bot built around your server", icon:"💎", popular:false,
+    name:"Premium", price:"30+", robux:"3K+", tag:"Fully custom bot built around your server", icon:"💎", popular:false,
     commands:["/players","/server","/dm","/joinvc","/commands"],
     systems:[
       { emoji:"🎮", name:"ERLC Live Integration", desc:"live player list & server info" },
@@ -690,7 +760,10 @@ function renderSteps() {
   `).join("");
 }
 
+let currentCurrency = "usd";
+
 function renderPricing() {
+  const isRobux = currentCurrency === "robux";
   document.getElementById("pricing-grid").innerHTML = PACKAGES.map((p, i) => `
     <div class="reveal price-card ${p.popular ? 'popular' : ''}" style="transition-delay:${i * 0.1}s">
       ${p.popular ? '<div class="popular-badge">Popular</div>' : ''}
@@ -699,9 +772,9 @@ function renderPricing() {
         <h3>${p.name}</h3>
         <div class="price-tag">${p.tag}</div>
         <div class="price-amount">
-          <span class="price-dollar">$</span>
-          <span class="price-num">${p.price}</span>
-          <span class="price-usd">one-time</span>
+          <span class="price-dollar">${isRobux ? 'R$' : '$'}</span>
+          <span class="price-num">${isRobux ? p.robux : p.price}</span>
+          <span class="price-usd">${isRobux ? 'Robux' : 'one-time'}</span>
         </div>
       </div>
       <div class="price-bottom">
@@ -722,6 +795,7 @@ function renderPricing() {
       </div>
     </div>
   `).join("");
+  observeReveals();
 }
 
 function renderReviews() {
@@ -764,6 +838,16 @@ document.getElementById("filter-btns").addEventListener("click", e => {
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   e.target.classList.add("active");
   renderFeatures(e.target.dataset.cat);
+});
+
+/* ── Currency Toggle ──────────────────────────── */
+document.getElementById("currency-toggle").addEventListener("click", e => {
+  const btn = e.target.closest(".currency-btn");
+  if (!btn) return;
+  document.querySelectorAll(".currency-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentCurrency = btn.dataset.currency;
+  renderPricing();
 });
 
 /* ── Scroll Reveal Observer ───────────────────── */
@@ -941,6 +1025,13 @@ renderPricing();
 renderReviews();
 renderFAQ();
 observeReveals();
+
+/* ── Loading Screen ───────────────────────────── */
+document.body.style.overflow = "hidden";
+setTimeout(() => {
+  document.getElementById("loader").classList.add("done");
+  document.body.style.overflow = "";
+}, 3000);
 </script>
 </body>
 </html>
