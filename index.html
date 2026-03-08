@@ -48,9 +48,9 @@ img { max-width: 100%; }
 /* ── Background Canvas ───────────────────── */
 #bg-canvas {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 0; pointer-events: none;
+  z-index: 0; pointer-events: none; opacity: 0.8;
 }
-body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
+.nav, .hero, .section, .footer, section, footer {
   position: relative; z-index: 1;
 }
 
@@ -151,9 +151,7 @@ body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
   filter: blur(60px); pointer-events: none; animation: f2 10s ease-in-out infinite;
 }
 .hero-grid {
-  position: absolute; inset: 0; opacity: 0.02; pointer-events: none;
-  background-image: linear-gradient(var(--blue) 1px, transparent 1px), linear-gradient(90deg, var(--blue) 1px, transparent 1px);
-  background-size: 80px 80px;
+  display: none;
 }
 .hero-dots {
   position: absolute; opacity: 0.15; pointer-events: none;
@@ -702,13 +700,14 @@ const PACKAGES = [
   },
   {
     name:"Advanced", price:"15–25", robux:"1.5K–2.5K", tag:"Tickets, moderation, sessions & custom systems", icon:"🔥", popular:true,
-    commands:["/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport","/infract","/infraction-view","/infraction-revoke","/infraction-wipe","/promote","/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote","/strike-leaderboard","/verify"],
+    commands:["/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport","/infract","/infraction-view","/infraction-revoke","/infraction-wipe","/promote","/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote","/strike-leaderboard","/verify","/stafflist","/demote","/suspend","/loa","/activity-check"],
     systems:[
       { emoji:"🎫", name:"Full Ticket System", desc:"dropdown panel, 3 types, claim, transcripts, auto close" },
       { emoji:"🔔", name:"Smart Ticket Notifications", desc:"1 min delay DMs for staff & users" },
       { emoji:"📋", name:"Infraction System", desc:"log, view, revoke, wipe" },
       { emoji:"🚀", name:"Session System", desc:"ERLC announcements & votes" },
       { emoji:"🏆", name:"Strike Leaderboard", desc:"track staff activity" },
+      { emoji:"👥", name:"Staff Management", desc:"stafflist, demote, suspend, LOA, activity checks" },
     ],
     includes: "Everything in Basic",
   },
@@ -921,9 +920,9 @@ window.addEventListener("scroll", () => {
   const canvas = document.getElementById("bg-canvas");
   const ctx = canvas.getContext("2d");
   let w, h, particles, mouse = { x: -9999, y: -9999 };
-  const PARTICLE_COUNT = 80;
-  const CONNECT_DIST = 140;
-  const MOUSE_DIST = 200;
+  const PARTICLE_COUNT = 50;
+  const CONNECT_DIST = 120;
+  const MOUSE_DIST = 160;
 
   function resize() {
     w = canvas.width = window.innerWidth;
