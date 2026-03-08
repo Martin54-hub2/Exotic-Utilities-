@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exotic Utilities — Systems Showcase</title>
+<meta name="theme-color" content="#6390ff">
+<link rel="icon" type="image/png" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #030712; --surface: #0a0f1a; --card: #0c1222; --card-h: #101829;
+  --border: rgba(255,255,255,0.05); --border-h: rgba(99,144,255,0.3);
+  --blue: #6390ff; --blue-bright: #7ba4ff; --blue-dim: rgba(99,144,255,0.1);
+  --blue-glow: rgba(99,144,255,0.3); --accent: #818cf8;
+  --white: #f0f2f8; --gray: #6b7280; --gray-lt: #9ca3af; --gray-dk: #1f2937;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--white); overflow-x:hidden; cursor:none; line-height:1.6; }
+a,button { cursor:none; text-decoration:none; }
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--gray-dk); border-radius:3px; }
+::selection { background:var(--blue-dim); color:var(--blue); }
+
+/* ── Cursor ──────────────────────────────── */
+#cursor-dot { position:fixed;top:0;left:0;width:10px;height:10px;border-radius:50%;background:var(--blue);z-index:9999;pointer-events:none;box-shadow:0 0 14px var(--blue-glow);mix-blend-mode:screen;transform:translate(-100px,-100px); }
+#cursor-ring { position:fixed;top:0;left:0;width:44px;height:44px;z-index:9998;pointer-events:none;opacity:0.4;transition:opacity 0.2s,transform 0.18s ease;transform:translate(-100px,-100px); }
+
+/* ── Nav ─────────────────────────────────── */
+.nav { position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(3,7,18,0.92);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border); }
+.nav-inner { max-width:1200px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:72px; }
+.nav-logo { display:flex;align-items:center;gap:12px;color:var(--white); }
+.nav-logo-icon { width:38px;height:38px;border-radius:10px;overflow:hidden;box-shadow:0 0 20px var(--blue-glow); }
+.nav-logo-icon img { width:100%;height:100%;object-fit:cover; }
+.nav-logo-text { font-size:18px;font-weight:700; }
+.nav-logo-text span { color:var(--blue); }
+.nav-links { display:flex;gap:6px;align-items:center; }
+.nav-link { color:var(--gray-lt);padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;transition:all 0.2s; }
+.nav-link:hover,.nav-link.active { color:var(--blue);background:var(--blue-dim); }
+.nav-cta { padding:10px 22px;border-radius:10px;margin-left:8px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;font-size:14px;box-shadow:0 0 24px var(--blue-glow); }
+
+/* ── Hero ─────────────────────────────────── */
+.page-hero { padding:140px 24px 80px; text-align:center; position:relative; overflow:hidden; }
+.page-hero-orb { position:absolute;top:20%;left:50%;transform:translateX(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,144,255,0.1) 0%,transparent 70%);filter:blur(80px);pointer-events:none; }
+.page-hero h1 { font-size:clamp(32px,5vw,56px);font-weight:900;letter-spacing:-0.03em;margin-bottom:16px;position:relative; }
+.page-hero h1 .grad { background:linear-gradient(135deg,var(--blue),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+.page-hero p { font-size:18px;color:var(--gray-lt);max-width:550px;margin:0 auto;position:relative; }
+
+/* ── 3D Tilt Cards ────────────────────────── */
+.showcase-grid {
+  max-width:1200px; margin:0 auto; padding:40px 24px 120px;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:24px;
+}
+.tilt-wrap { perspective: 800px; }
+.tilt-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  will-change: transform;
+  position: relative;
+  overflow: hidden;
+}
+.tilt-card:hover {
+  border-color: var(--border-h);
+  box-shadow: 0 20px 60px rgba(99,144,255,0.08), 0 0 0 1px rgba(99,144,255,0.1);
+}
+.tilt-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(99,144,255,0.06) 0%, transparent 60%);
+  pointer-events: none; border-radius: 20px;
+  opacity: 0; transition: opacity 0.3s;
+}
+.tilt-card:hover::before { opacity: 1; }
+
+.tilt-inner { transform: translateZ(30px); }
+.card-header { display:flex;align-items:center;gap:14px;margin-bottom:20px; }
+.card-dot { width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 12px var(--blue-glow); }
+.card-title { font-size:20px;font-weight:700; }
+.card-desc { font-size:14px;color:var(--gray-lt);line-height:1.65;margin-bottom:24px; }
+.card-divider { height:1px;background:var(--border);margin-bottom:20px; }
+
+.card-commands { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px; }
+.card-cmd {
+  padding:4px 10px;border-radius:6px;font-size:12px;
+  font-family:'JetBrains Mono',monospace;font-weight:500;
+  background:rgba(99,144,255,0.06);color:var(--blue-bright);
+  border:1px solid rgba(99,144,255,0.1);
+  transform:translateZ(20px);
+}
+.card-features { display:flex;flex-direction:column;gap:10px; }
+.card-feat { display:flex;align-items:flex-start;gap:10px; }
+.card-feat-dot { width:5px;height:5px;min-width:5px;border-radius:50%;background:var(--blue);margin-top:7px;box-shadow:0 0 6px var(--blue-glow); }
+.card-feat-text { font-size:13px;color:var(--gray);line-height:1.5; }
+
+/* ── Back Link ────────────────────────────── */
+.back-link {
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:14px;color:var(--gray-lt);margin-bottom:40px;
+  transition:color 0.2s;position:relative;
+}
+.back-link:hover { color:var(--blue); }
+.back-arrow { font-size:18px;transition:transform 0.2s; }
+.back-link:hover .back-arrow { transform:translateX(-3px); }
+
+/* ── Reveal ───────────────────────────────── */
+.reveal { opacity:0;transform:translateY(32px);transition:opacity 0.7s ease,transform 0.7s ease; }
+.reveal.visible { opacity:1;transform:translateY(0); }
+
+/* ── Footer ───────────────────────────────── */
+.footer { padding:36px 24px;max-width:1200px;margin:0 auto;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px; }
+.footer-logo { display:flex;align-items:center;gap:10px; }
+.footer-logo-icon { width:28px;height:28px;border-radius:8px;overflow:hidden; }
+.footer-logo-icon img { width:100%;height:100%;object-fit:cover; }
+.footer-copy { font-size:13px;color:var(--gray); }
+.footer-links { display:flex;gap:24px; }
+.footer-links a { font-size:13px;color:var(--gray);transition:color 0.2s; }
+.footer-links a:hover { color:var(--blue); }
+
+@media(max-width:768px) { .nav-links{display:none!important;} .showcase-grid{grid-template-columns:1fr;} }
+@media(max-width:500px) { body,*,a,button{cursor:auto!important;} #cursor-dot,#cursor-ring{display:none!important;} }
+</style>
+</head>
+<body>
+
+<div id="cursor-dot"></div>
+<div id="cursor-ring">
+  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+    <circle cx="22" cy="22" r="18" stroke="#6390ff" stroke-width="1" opacity="0.6"/>
+    <line x1="22" y1="0" x2="22" y2="8" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="22" y1="36" x2="22" y2="44" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="22" x2="8" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="36" y1="22" x2="44" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+  </svg>
+</div>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-icon"><img src="logo.png" alt="EU"></div>
+      <div class="nav-logo-text">Exotic <span>Utilities</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="index.html#features" class="nav-link">Features</a>
+      <a href="index.html#pricing" class="nav-link">Pricing</a>
+      <a href="showcase.html" class="nav-link active">Showcase</a>
+      <a href="index.html#faq" class="nav-link">FAQ</a>
+      <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" class="nav-cta">Join Discord ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="page-hero">
+  <div class="page-hero-orb"></div>
+  <a href="index.html" class="back-link"><span class="back-arrow">←</span> Back to Home</a>
+  <h1>Bot <span class="grad">Systems Showcase</span></h1>
+  <p>An interactive look at every system we build into your custom bot. Hover to explore.</p>
+</section>
+
+<!-- Showcase Grid -->
+<div class="showcase-grid" id="showcase-grid"></div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-logo">
+    <div class="footer-logo-icon"><img src="logo.png" alt="EU"></div>
+    <span class="footer-copy">© 2025 Exotic Utilities</span>
+  </div>
+  <div class="footer-links">
+    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Discord</a>
+    <a href="index.html">Home</a>
+    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact</a>
+  </div>
+</footer>
+
+<script>
+const DISCORD = "https://discord.gg/tfvNFNmHMY";
+
+const SYSTEMS = [
+  {
+    title: "Moderation System",
+    desc: "Full moderation suite with clean logging embeds. Every action is tracked and logged for staff accountability.",
+    commands: ["/ban","/unban","/kick","/timeout","/untimeout","/mute","/unmute","/warn","/warnings","/clearwarns","/purge","/slowmode","/lock","/unlock","/role","/nick"],
+    features: [
+      "Ban, kick, timeout with reason tracking",
+      "Mute/unmute with duration support",
+      "Warning system with per-user history",
+      "Bulk message purge with user filter",
+      "Channel lock/unlock for raids",
+      "Role and nickname management",
+      "Clean embed logging on every action",
+    ],
+  },
+  {
+    title: "Ticket System",
+    desc: "Advanced support ticket system with dropdown panels, multiple ticket types, staff claiming, and automatic HTML transcripts.",
+    commands: ["/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport"],
+    features: [
+      "Dropdown panel with 3 ticket types",
+      "Staff claiming system",
+      "Add users, admins, and support to tickets",
+      "Close request flow for user confirmation",
+      "Auto HTML transcript on close",
+      "Smart DM notifications with 1 min delay",
+      "Max ticket limit per user",
+    ],
+  },
+  {
+    title: "Infraction System",
+    desc: "Staff accountability system for tracking infractions. Log, view, revoke, or wipe — full control over your moderation records.",
+    commands: ["/infract","/infraction-view","/infraction-revoke","/infraction-wipe"],
+    features: [
+      "Log infractions with reason and evidence",
+      "View full infraction history per user",
+      "Revoke individual infractions",
+      "Wipe entire infraction records",
+      "Staff-only permissions",
+      "Clean embed displays",
+    ],
+  },
+  {
+    title: "Session System",
+    desc: "ERLC session management with announcements, voting, and status tracking. Perfect for roleplay servers.",
+    commands: ["/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote"],
+    features: [
+      "Session startup announcements",
+      "Session shutdown notifications",
+      "Session full alerts",
+      "Community session voting",
+      "Clean formatted embeds",
+      "Configurable announcement channel",
+    ],
+  },
+  {
+    title: "XP & Leveling System",
+    desc: "Automatic XP tracking with level-up announcements and a competitive leaderboard to keep your community engaged.",
+    commands: ["/rank","/leaderboard"],
+    features: [
+      "Automatic XP gain on messages",
+      "Level-up announcements",
+      "Per-user rank card command",
+      "Server-wide leaderboard",
+      "Configurable XP rates",
+      "Anti-spam XP cooldown",
+    ],
+  },
+  {
+    title: "ERLC Live Integration",
+    desc: "Real-time data pulled directly from ERLC. Live player lists, server info, and Bloxlink-powered moderation panels.",
+    commands: ["/players","/server"],
+    features: [
+      "Live player list from ERLC",
+      "Real-time server info and status",
+      "Moderation panel via Bloxlink",
+      "Pull Discord and Roblox profiles on demand",
+      "Staff-only access controls",
+    ],
+  },
+  {
+    title: "VC Office System",
+    desc: "Private voice channel offices for server boosters. Automatically created and managed with clean permissions.",
+    commands: ["/joinvc"],
+    features: [
+      "Private voice offices for boosters",
+      "Auto-created on boost",
+      "Clean permission management",
+      "Customizable office names",
+    ],
+  },
+  {
+    title: "Boost Rewards",
+    desc: "Automatically detects Nitro boosts and rewards boosters with roles, perks, and server announcements.",
+    commands: [],
+    features: [
+      "Auto-detect new boosts",
+      "Assign reward roles automatically",
+      "Boost announcement embeds",
+      "Track boost duration",
+      "Custom reward configuration",
+    ],
+  },
+  {
+    title: "Strike Leaderboard",
+    desc: "Competitive staff tracking system. See who's putting in the most work with a ranked leaderboard.",
+    commands: ["/strike-leaderboard","/promote"],
+    features: [
+      "Track staff strikes and activity",
+      "Ranked leaderboard display",
+      "Promote command for staff advancement",
+      "Clean embed formatting",
+    ],
+  },
+];
+
+/* ── Render Cards ─────────────────────────────── */
+const grid = document.getElementById("showcase-grid");
+
+grid.innerHTML = SYSTEMS.map((s, i) => `
+  <div class="tilt-wrap reveal" style="transition-delay:${i * 0.06}s">
+    <div class="tilt-card" data-tilt>
+      <div class="tilt-inner">
+        <div class="card-header">
+          <div class="card-dot"></div>
+          <div class="card-title">${s.title}</div>
+        </div>
+        <div class="card-desc">${s.desc}</div>
+        ${s.commands.length ? `
+          <div class="card-divider"></div>
+          <div class="card-commands">
+            ${s.commands.map(c => `<span class="card-cmd">${c}</span>`).join("")}
+          </div>
+        ` : ''}
+        <div class="card-divider"></div>
+        <div class="card-features">
+          ${s.features.map(f => `
+            <div class="card-feat">
+              <div class="card-feat-dot"></div>
+              <span class="card-feat-text">${f}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  </div>
+`).join("");
+
+/* ── 3D Tilt Effect ───────────────────────────── */
+document.querySelectorAll("[data-tilt]").forEach(card => {
+  card.addEventListener("mousemove", e => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    const rotateX = ((y - centerY) / centerY) * -8;
+    const rotateY = ((x - centerX) / centerX) * 8;
+
+    card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+    // Spotlight follow
+    const pctX = (x / rect.width) * 100;
+    const pctY = (y / rect.height) * 100;
+    card.style.setProperty("--mouse-x", pctX + "%");
+    card.style.setProperty("--mouse-y", pctY + "%");
+  });
+
+  card.addEventListener("mouseleave", () => {
+    card.style.transform = "rotateX(0) rotateY(0)";
+  });
+});
+
+/* ── Scroll Reveal ────────────────────────────── */
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add("visible"); obs.unobserve(e.target); }});
+}, { threshold:0.1 });
+document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+
+/* ── Cursor ───────────────────────────────────── */
+(function(){
+  const dot=document.getElementById("cursor-dot"),ring=document.getElementById("cursor-ring");
+  let mx=-100,my=-100,dx=-100,dy=-100,rx=-100,ry=-100,hov=false;
+  document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;});
+  document.addEventListener("mouseover",e=>{if(e.target.closest("a,button,.clickable"))hov=true;});
+  document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.clickable"))hov=false;});
+  function tick(){
+    dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;
+    dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;
+    const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;
+    ring.style.opacity=hov?"0.7":"0.4";requestAnimationFrame(tick);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>
