@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exotic Utilities — Custom Discord Bots</title>
+<meta name="description" content="Premium custom Discord bots built to order. Moderation, tickets, ERLC integration, infraction systems — whatever your server needs, we build it.">
+<meta name="theme-color" content="#6390ff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #030712;
+  --surface: #0a0f1a;
+  --card: #0c1222;
+  --card-h: #101829;
+  --border: rgba(255,255,255,0.05);
+  --border-h: rgba(99,144,255,0.3);
+  --blue: #6390ff;
+  --blue-bright: #7ba4ff;
+  --blue-dim: rgba(99,144,255,0.1);
+  --blue-glow: rgba(99,144,255,0.3);
+  --accent: #818cf8;
+  --white: #f0f2f8;
+  --gray: #6b7280;
+  --gray-lt: #9ca3af;
+  --gray-dk: #1f2937;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  overflow-x: hidden;
+  cursor: none;
+  line-height: 1.6;
+}
+a, button { cursor: none; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--gray-dk); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+::selection { background: var(--blue-dim); color: var(--blue); }
+img { max-width: 100%; }
+
+/* ── Background Canvas ───────────────────── */
+#bg-canvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+body > *:not(#bg-canvas):not(#cursor-dot):not(#cursor-ring) {
+  position: relative; z-index: 1;
+}
+
+/* ── Crosshair ──────────────────────────── */
+#cursor-dot {
+  position: fixed; top: 0; left: 0; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--blue); z-index: 9999;
+  pointer-events: none; box-shadow: 0 0 14px var(--blue-glow);
+  mix-blend-mode: screen; transform: translate(-100px, -100px);
+}
+#cursor-ring {
+  position: fixed; top: 0; left: 0; width: 44px; height: 44px;
+  z-index: 9998; pointer-events: none; opacity: 0.4;
+  transition: opacity 0.2s, transform 0.18s ease;
+  transform: translate(-100px, -100px);
+}
+#cursor-ring svg { display: block; }
+
+/* ── Nav ────────────────────────────────── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  transition: all 0.5s cubic-bezier(.4,0,.2,1);
+  border-bottom: 1px solid transparent;
+}
+.nav.scrolled {
+  background: rgba(3,7,18,0.92);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border-bottom-color: var(--border);
+}
+.nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between; height: 72px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; color: var(--white);
+}
+.nav-logo-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';
+  box-shadow: 0 0 20px var(--blue-glow);
+}
+.nav-logo-text { font-size: 18px; font-weight: 700; }
+.nav-logo-text span { color: var(--blue); }
+.nav-links { display: flex; gap: 6px; align-items: center; }
+.nav-link {
+  color: var(--gray-lt); padding: 8px 16px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; text-decoration: none;
+  transition: all 0.2s; background: transparent;
+}
+.nav-link:hover, .nav-link.active { color: var(--blue); background: var(--blue-dim); }
+.nav-cta {
+  padding: 10px 22px; border-radius: 10px; margin-left: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; font-weight: 700; font-size: 14px; text-decoration: none;
+  box-shadow: 0 0 24px var(--blue-glow); transition: transform 0.2s;
+}
+.nav-cta:hover { transform: translateY(-1px); }
+
+/* ── Section base ───────────────────────── */
+.section { padding: 140px 24px; max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-size: 12px; font-weight: 700; color: var(--blue);
+  text-transform: uppercase; letter-spacing: 4px;
+  text-align: center; display: block; margin-bottom: 14px;
+}
+.section-title {
+  font-size: clamp(28px, 4vw, 50px); font-weight: 800;
+  color: var(--white); text-align: center; letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+.section-sub {
+  font-size: 16px; color: var(--gray); text-align: center;
+  max-width: 500px; margin: 0 auto 64px;
+}
+
+/* ── Reveal animation ───────────────────── */
+.reveal {
+  opacity: 0; transform: translateY(32px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ── Hero ────────────────────────────────── */
+.hero {
+  position: relative; min-height: 100vh; display: flex;
+  align-items: center; justify-content: center; overflow: hidden;
+  padding-top: 72px;
+}
+.hero-orb1 {
+  position: absolute; top: 18%; left: 28%; width: 520px; height: 520px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(99,144,255,0.13) 0%, transparent 70%);
+  filter: blur(60px); pointer-events: none; animation: f1 8s ease-in-out infinite;
+}
+.hero-orb2 {
+  position: absolute; top: 55%; right: 18%; width: 380px; height: 380px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(129,140,248,0.09) 0%, transparent 70%);
+  filter: blur(60px); pointer-events: none; animation: f2 10s ease-in-out infinite;
+}
+.hero-grid {
+  position: absolute; inset: 0; opacity: 0.02; pointer-events: none;
+  background-image: linear-gradient(var(--blue) 1px, transparent 1px), linear-gradient(90deg, var(--blue) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+.hero-dots {
+  position: absolute; opacity: 0.15; pointer-events: none;
+}
+.hero-dots.tl { top: 110px; left: 60px; }
+.hero-dots.br { bottom: 140px; right: 70px; opacity: 0.08; }
+.hero-content { position: relative; text-align: center; padding: 0 24px; max-width: 900px; z-index: 2; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 18px; border-radius: 50px;
+  background: var(--blue-dim); border: 1px solid rgba(99,144,255,0.15);
+  font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 32px;
+  animation: fid 0.6s ease;
+}
+.hero-badge-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--blue); box-shadow: 0 0 10px var(--blue);
+  animation: blink 2s infinite;
+}
+.hero h1 {
+  font-size: clamp(38px, 6.5vw, 76px); font-weight: 900;
+  line-height: 1.02; color: var(--white); margin: 0 0 24px;
+  letter-spacing: -0.035em; animation: fiu 0.8s ease;
+}
+.hero h1 .grad {
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-desc {
+  font-size: clamp(16px, 2vw, 20px); color: var(--gray-lt);
+  max-width: 580px; margin: 0 auto 44px; line-height: 1.65;
+  font-weight: 400; animation: fiu 1s ease;
+}
+.hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; animation: fiu 1.2s ease; }
+.btn-primary {
+  padding: 15px 36px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; font-weight: 700; font-size: 16px; text-decoration: none;
+  box-shadow: 0 0 40px var(--blue-glow), 0 8px 32px rgba(0,0,0,0.4);
+  transition: transform 0.25s;
+}
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-secondary {
+  padding: 15px 36px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); color: var(--white);
+  font-weight: 600; font-size: 16px; text-decoration: none;
+  border: 1px solid var(--border); transition: all 0.25s;
+}
+.btn-secondary:hover { border-color: var(--border-h); }
+.stats-grid {
+  margin-top: 72px; display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border); border-radius: 18px;
+  overflow: hidden; animation: fiu 1.5s ease;
+}
+.stat-item { padding: 30px 16px; background: var(--surface); text-align: center; }
+.stat-val { font-size: 30px; font-weight: 800; color: var(--white); }
+.stat-label { font-size: 11px; color: var(--gray); margin-top: 4px; text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ── Feature cards ──────────────────────── */
+.filter-btns { display: flex; gap: 8px; justify-content: center; margin-bottom: 48px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 8px 20px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03); color: var(--gray-lt);
+  font-weight: 600; font-size: 13px; font-family: 'Outfit'; cursor: pointer;
+  text-transform: capitalize; transition: all 0.2s;
+}
+.filter-btn.active, .filter-btn:hover {
+  background: var(--blue-dim); color: var(--blue);
+  border-color: rgba(99,144,255,0.2);
+}
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.feature-card {
+  padding: 28px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.feature-card:hover { border-color: var(--border-h); background: var(--card-h); }
+.feature-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: var(--blue-dim); display: flex; align-items: center;
+  justify-content: center; font-size: 22px; margin-bottom: 16px;
+}
+.feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.feature-card p { font-size: 13.5px; color: var(--gray); line-height: 1.65; }
+
+/* ── Steps ──────────────────────────────── */
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.step-card {
+  padding: 32px; border-radius: 18px;
+  background: var(--card); border: 1px solid var(--border);
+  text-align: center; position: relative; overflow: hidden;
+  transition: all 0.3s;
+}
+.step-card:hover { border-color: var(--border-h); }
+.step-bg-num {
+  position: absolute; top: 12px; right: 18px;
+  font-size: 68px; font-weight: 900; color: rgba(99,144,255,0.04);
+  line-height: 1;
+}
+.step-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--blue-dim); border: 1px solid rgba(99,144,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; margin: 0 auto 20px; position: relative;
+}
+.step-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; position: relative; }
+.step-card p { font-size: 14px; color: var(--gray); line-height: 1.6; position: relative; }
+
+/* ── Pricing ────────────────────────────── */
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; align-items: start; }
+.price-card {
+  border-radius: 20px; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border);
+  position: relative; transition: all 0.3s;
+}
+.price-card:hover { border-color: var(--border-h); }
+.price-card.popular { border-color: rgba(99,144,255,0.25); box-shadow: 0 0 80px rgba(99,144,255,0.06); }
+.popular-badge {
+  position: absolute; top: 18px; right: 18px;
+  padding: 5px 14px; border-radius: 50px;
+  background: var(--blue-dim); border: 1px solid rgba(99,144,255,0.2);
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.price-top { padding: 36px 32px 0; }
+.price-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: rgba(255,255,255,0.03); display: flex;
+  align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px;
+}
+.popular .price-icon { background: var(--blue-dim); }
+.price-card h3 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.price-tag { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+.price-amount { display: flex; align-items: baseline; gap: 4px; margin-bottom: 30px; }
+.price-dollar { font-size: 16px; color: var(--gray); }
+.price-num { font-size: 42px; font-weight: 900; line-height: 1; }
+.price-usd { font-size: 14px; color: var(--gray); margin-left: 4px; }
+.price-bottom { padding: 0 32px 36px; }
+.price-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+.price-section-label {
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  text-transform: uppercase; letter-spacing: 1.5px;
+  margin-bottom: 12px; margin-top: 20px;
+}
+.price-section-label:first-child { margin-top: 0; }
+.price-cmds {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+}
+.price-cmd {
+  padding: 4px 10px; border-radius: 6px; font-size: 12px;
+  font-family: 'JetBrains Mono', monospace; font-weight: 500;
+  background: rgba(99,144,255,0.06); color: var(--blue-bright);
+  border: 1px solid rgba(99,144,255,0.1);
+}
+.price-system {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
+}
+.price-system-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.price-system-text { font-size: 13.5px; color: var(--gray-lt); line-height: 1.4; }
+.price-system-text strong { color: var(--white); font-weight: 600; }
+.price-includes {
+  font-size: 12px; color: var(--accent); font-weight: 600;
+  margin-bottom: 16px; padding: 8px 14px; border-radius: 8px;
+  background: rgba(129,140,248,0.06); border: 1px solid rgba(129,140,248,0.1);
+  display: inline-block;
+}
+.price-feat { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.price-feat .check { font-size: 13px; color: var(--blue); margin-top: 1px; flex-shrink: 0; }
+.price-feat .x { font-size: 13px; color: var(--gray); margin-top: 1px; flex-shrink: 0; }
+.price-feat span { font-size: 14px; color: var(--gray-lt); line-height: 1.4; }
+.price-feat.off { opacity: 0.3; }
+.price-feat.off span { color: var(--gray); text-decoration: line-through; }
+.price-btn {
+  display: block; text-align: center; margin-top: 28px;
+  padding: 14px; border-radius: 12px; text-decoration: none;
+  font-weight: 700; font-size: 15px; transition: all 0.25s;
+  background: rgba(255,255,255,0.04); color: var(--white);
+  border: 1px solid var(--border);
+}
+.price-btn:hover { border-color: var(--border-h); }
+.price-btn.pop {
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; border: none; box-shadow: 0 0 30px var(--blue-glow);
+}
+.price-note { text-align: center; margin-top: 36px; font-size: 14px; color: var(--gray); }
+.price-note a { color: var(--blue); text-decoration: none; }
+
+/* ── Reviews ────────────────────────────── */
+.reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.review-card {
+  padding: 28px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.review-card:hover { border-color: var(--border-h); }
+.review-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.review-avatar {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue-dim), rgba(129,140,248,0.08));
+  border: 1px solid rgba(99,144,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--blue);
+}
+.review-name { font-size: 15px; font-weight: 600; }
+.review-stars { font-size: 12px; color: #facc15; margin-top: 2px; }
+.review-text { font-size: 14px; color: var(--gray-lt); line-height: 1.65; }
+
+/* ── FAQ ─────────────────────────────────── */
+.faq-section { max-width: 800px; }
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-item {
+  border-radius: 14px; overflow: hidden;
+  background: var(--card); border: 1px solid var(--border);
+  transition: border-color 0.3s;
+}
+.faq-item.open { border-color: var(--border-h); }
+.faq-q {
+  width: 100%; padding: 22px 26px;
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--white); font-size: 15px; font-weight: 600;
+  font-family: 'Outfit'; text-align: left; transition: color 0.2s;
+}
+.faq-item.open .faq-q { color: var(--blue); }
+.faq-icon {
+  font-size: 22px; color: var(--gray); flex-shrink: 0; margin-left: 16px;
+  transition: all 0.3s; display: inline-block;
+}
+.faq-item.open .faq-icon { transform: rotate(45deg); color: var(--blue); }
+.faq-a {
+  max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+}
+.faq-item.open .faq-a { max-height: 250px; }
+.faq-a p {
+  padding: 0 26px 22px; font-size: 14px;
+  color: var(--gray-lt); line-height: 1.7;
+}
+
+/* ── CTA ─────────────────────────────────── */
+.cta-box {
+  padding: 72px 48px; border-radius: 24px;
+  background: var(--card); border: 1px solid var(--border);
+  position: relative; overflow: hidden; text-align: center;
+  max-width: 900px; margin: 0 auto;
+}
+.cta-orb {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 450px; height: 450px; border-radius: 50%;
+  background: radial-gradient(circle, var(--blue-glow) 0%, transparent 70%);
+  filter: blur(60px); opacity: 0.15; pointer-events: none;
+}
+.cta-box h2 { font-size: clamp(24px, 4vw, 42px); font-weight: 800; margin-bottom: 16px; position: relative; }
+.cta-box p { font-size: 16px; color: var(--gray); margin-bottom: 36px; position: relative; }
+.cta-btn {
+  display: inline-block; padding: 16px 44px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  color: #fff; font-weight: 700; font-size: 17px; text-decoration: none;
+  position: relative; box-shadow: 0 0 50px var(--blue-glow);
+  transition: transform 0.25s;
+}
+.cta-btn:hover { transform: translateY(-2px); }
+
+/* ── Footer ──────────────────────────────── */
+.footer {
+  padding: 36px 24px; max-width: 1200px; margin: 0 auto;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo { display: flex; align-items: center; gap: 10px; }
+.footer-logo-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--blue), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';
+}
+.footer-copy { font-size: 13px; color: var(--gray); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-size: 13px; color: var(--gray); text-decoration: none; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--blue); }
+
+/* ── Animations ──────────────────────────── */
+@keyframes fiu { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fid { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes f1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px,-40px); } }
+@keyframes f2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-20px,30px); } }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+/* ── Responsive ──────────────────────────── */
+@media (max-width: 768px) {
+  .nav-links { display: none !important; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 36px; }
+}
+@media (max-width: 500px) {
+  body, *, a, button { cursor: auto !important; }
+  #cursor-dot, #cursor-ring { display: none !important; }
+  #bg-canvas { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background Animation -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Crosshair Cursor -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring">
+  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+    <circle cx="22" cy="22" r="18" stroke="#6390ff" stroke-width="1" opacity="0.6"/>
+    <line x1="22" y1="0" x2="22" y2="8" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="22" y1="36" x2="22" y2="44" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="0" y1="22" x2="8" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+    <line x1="36" y1="22" x2="44" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
+  </svg>
+</div>
+
+<!-- Navbar -->
+<nav class="nav" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+      <div class="nav-logo-icon">EU</div>
+      <div class="nav-logo-text">Exotic <span>Utilities</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Home</a>
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="#reviews" class="nav-link">Reviews</a>
+      <a href="#faq" class="nav-link">FAQ</a>
+      <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" class="nav-cta">Join Discord ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="home">
+  <div class="hero-orb1"></div>
+  <div class="hero-orb2"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-dots tl">
+    <svg width="120" height="120"><circle cx="10" cy="10" r="2" fill="#6390ff"/><circle cx="32" cy="10" r="2" fill="#6390ff"/><circle cx="54" cy="10" r="2" fill="#6390ff"/><circle cx="76" cy="10" r="2" fill="#6390ff"/><circle cx="98" cy="10" r="2" fill="#6390ff"/><circle cx="10" cy="32" r="2" fill="#6390ff"/><circle cx="32" cy="32" r="2" fill="#6390ff"/><circle cx="54" cy="32" r="2" fill="#6390ff"/><circle cx="76" cy="32" r="2" fill="#6390ff"/><circle cx="98" cy="32" r="2" fill="#6390ff"/><circle cx="10" cy="54" r="2" fill="#6390ff"/><circle cx="32" cy="54" r="2" fill="#6390ff"/><circle cx="54" cy="54" r="2" fill="#6390ff"/><circle cx="76" cy="54" r="2" fill="#6390ff"/><circle cx="98" cy="54" r="2" fill="#6390ff"/><circle cx="10" cy="76" r="2" fill="#6390ff"/><circle cx="32" cy="76" r="2" fill="#6390ff"/><circle cx="54" cy="76" r="2" fill="#6390ff"/><circle cx="76" cy="76" r="2" fill="#6390ff"/><circle cx="98" cy="76" r="2" fill="#6390ff"/><circle cx="10" cy="98" r="2" fill="#6390ff"/><circle cx="32" cy="98" r="2" fill="#6390ff"/><circle cx="54" cy="98" r="2" fill="#6390ff"/><circle cx="76" cy="98" r="2" fill="#6390ff"/><circle cx="98" cy="98" r="2" fill="#6390ff"/></svg>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Rated 4.9/5 from 20+ customers
+    </div>
+    <h1>Custom Discord Bots <span class="grad">Built to Order</span></h1>
+    <p class="hero-desc">Premium custom bots for your Discord server. Moderation, tickets, ERLC integration, infraction systems — whatever your server needs, we build it from scratch.</p>
+    <div class="hero-btns">
+      <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" class="btn-primary">Order Now ↗</a>
+      <a href="#pricing" class="btn-secondary">View Pricing</a>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="stat-val">20+</div><div class="stat-label">Bots Delivered</div></div>
+      <div class="stat-item"><div class="stat-val">4.9/5</div><div class="stat-label">Client Rating</div></div>
+      <div class="stat-item"><div class="stat-val">25+</div><div class="stat-label">Happy Customers</div></div>
+      <div class="stat-item"><div class="stat-val">24/7</div><div class="stat-label">Support</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="section" id="features">
+  <div class="reveal"><span class="section-label">What We Build</span><h2 class="section-title">Everything Your Server Needs</h2></div>
+  <div class="reveal filter-btns" id="filter-btns">
+    <button class="filter-btn active" data-cat="all">All</button>
+    <button class="filter-btn" data-cat="core">Core</button>
+    <button class="filter-btn" data-cat="advanced">Advanced</button>
+    <button class="filter-btn" data-cat="fun">Fun</button>
+  </div>
+  <div class="features-grid" id="features-grid"></div>
+</section>
+
+<!-- How to Order -->
+<section class="section" style="padding-top:100px;">
+  <div class="reveal"><span class="section-label">Purchasing</span><h2 class="section-title">How to Order</h2><p class="section-sub">Get your custom bot in 4 simple steps</p></div>
+  <div class="steps-grid" id="steps-grid"></div>
+</section>
+
+<!-- Pricing -->
+<section class="section" id="pricing">
+  <div class="reveal"><span class="section-label">Pricing</span><h2 class="section-title">Simple, Fair Pricing</h2></div>
+  <div class="pricing-grid" id="pricing-grid"></div>
+  <p class="reveal price-note">Need something custom? <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact us</a> for a quote.</p>
+</section>
+
+<!-- Reviews -->
+<section class="section" id="reviews">
+  <div class="reveal"><span class="section-label">Testimonials</span><h2 class="section-title">What Our Clients Say</h2></div>
+  <div class="reviews-grid" id="reviews-grid"></div>
+</section>
+
+<!-- FAQ -->
+<section class="section faq-section" id="faq" style="padding-bottom:80px;">
+  <div class="reveal"><span class="section-label">FAQ</span><h2 class="section-title">Got Questions?</h2></div>
+  <div class="faq-list" id="faq-list"></div>
+</section>
+
+<!-- CTA -->
+<section style="padding:80px 24px 120px;">
+  <div class="reveal cta-box">
+    <div class="cta-orb"></div>
+    <h2>Ready to Level Up Your Server?</h2>
+    <p>Join our Discord, open a ticket, and we'll build exactly what you need.</p>
+    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" class="cta-btn">Join Discord & Order ↗</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-logo">
+    <div class="footer-logo-icon">EU</div>
+    <span class="footer-copy">© 2025 Exotic Utilities</span>
+  </div>
+  <div class="footer-links">
+    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Discord</a>
+    <a href="#">Terms</a>
+    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ── Data ─────────────────────────────────────── */
+const DISCORD = "https://discord.gg/tfvNFNmHMY";
+
+const FEATURES = [
+  { icon:"🛡️", title:"Moderation System", desc:"Ban, kick, timeout, warn, purge, and slowmode — fully configured with clean logging and embeds.", cat:"core" },
+  { icon:"🎫", title:"Full Ticket System", desc:"Dropdown panel with 3 ticket types, claim, transcripts, add/remove users, auto close, and smart DM notifications.", cat:"core" },
+  { icon:"📊", title:"XP & Leveling", desc:"Automatic XP tracking, level-up announcements, /rank command, and a competitive leaderboard system.", cat:"core" },
+  { icon:"📋", title:"Infraction System", desc:"Log infractions, view history, revoke individual strikes, or wipe records. Full staff accountability.", cat:"core" },
+  { icon:"🚀", title:"Session System", desc:"ERLC session startup/shutdown announcements, session full alerts, and community session votes.", cat:"advanced" },
+  { icon:"🎮", title:"ERLC Integration", desc:"Live player lists and server info pulled directly from ERLC. Real-time data at your fingertips.", cat:"advanced" },
+  { icon:"🔔", title:"Smart Notifications", desc:"Intelligent ticket DMs with 1-minute delays for both staff and users. No spam, just clean alerts.", cat:"core" },
+  { icon:"📸", title:"Photo Channel", desc:"Auto star-react on images posted in designated channels. Clean and effortless engagement.", cat:"fun" },
+  { icon:"🏆", title:"Strike Leaderboard", desc:"Track and display staff activity with a competitive strike leaderboard system.", cat:"advanced" },
+  { icon:"🎙️", title:"VC Office System", desc:"Private voice offices for server boosters. Auto-created and managed with clean permissions.", cat:"advanced" },
+  { icon:"🌟", title:"Boost Rewards", desc:"Auto-detects Nitro boosts and rewards boosters with roles, perks, and announcements.", cat:"fun" },
+  { icon:"🎨", title:"Custom Branding", desc:"Your server name, logo, colors, and emojis throughout every single embed. Fully personalized.", cat:"advanced" },
+];
+
+const STEPS = [
+  { n:"01", title:"Join Our Discord", desc:"Click the Discord button and join the Exotic Utilities server.", icon:"💬" },
+  { n:"02", title:"Open a Ticket", desc:"Open a support ticket and tell us exactly what you need for your bot.", icon:"🎫" },
+  { n:"03", title:"We Build It", desc:"Our team builds your bot from scratch with updates along the way.", icon:"⚙️" },
+  { n:"04", title:"Delivered & Live", desc:"Your bot is delivered, tested, and set up live in your server.", icon:"🚀" },
+];
+
+const PACKAGES = [
+  {
+    name:"Basic", price:"5–10", tag:"Essential features and clean logs", icon:"⚡", popular:false,
+    commands:["/ban","/kick","/timeout","/warn","/purge","/slowmode","/say","/ping","/membercount","/rank","/leaderboard"],
+    systems:[
+      { emoji:"🛡️", name:"Moderation System", desc:"ban, kick, timeout, warn" },
+      { emoji:"📊", name:"XP & Leveling System", desc:"XP, level ups, leaderboard" },
+      { emoji:"📸", name:"Photo Channel", desc:"auto star react on images" },
+      { emoji:"🔔", name:"Join/Leave Logs", desc:"clean member tracking" },
+    ],
+    includes: null,
+  },
+  {
+    name:"Advanced", price:"15–25", tag:"Tickets, moderation, sessions & custom systems", icon:"🔥", popular:true,
+    commands:["/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport","/infract","/infraction-view","/infraction-revoke","/infraction-wipe","/promote","/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote","/strike-leaderboard","/verify"],
+    systems:[
+      { emoji:"🎫", name:"Full Ticket System", desc:"dropdown panel, 3 types, claim, transcripts, auto close" },
+      { emoji:"🔔", name:"Smart Ticket Notifications", desc:"1 min delay DMs for staff & users" },
+      { emoji:"📋", name:"Infraction System", desc:"log, view, revoke, wipe" },
+      { emoji:"🚀", name:"Session System", desc:"ERLC announcements & votes" },
+      { emoji:"🏆", name:"Strike Leaderboard", desc:"track staff activity" },
+    ],
+    includes: "Everything in Basic",
+  },
+  {
+    name:"Premium", price:"30+", tag:"Fully custom bot built around your server", icon:"💎", popular:false,
+    commands:["/players","/server","/dm","/joinvc","/commands"],
+    systems:[
+      { emoji:"🎮", name:"ERLC Live Integration", desc:"live player list & server info" },
+      { emoji:"🛡️", name:"Moderation Panel", desc:"pulls Discord & Roblox profile via Bloxlink" },
+      { emoji:"🎙️", name:"VC Office System", desc:"private voice offices for boosters" },
+      { emoji:"🌟", name:"Boost Rewards System", desc:"auto detects & rewards boosters" },
+      { emoji:"📝", name:"Auto Transcript", desc:"on every ticket close" },
+      { emoji:"🎨", name:"Fully Custom Branding", desc:"your name, logo, colors, emojis" },
+      { emoji:"⚙️", name:"Custom Features", desc:"built specifically for your server" },
+    ],
+    includes: "Everything in Advanced",
+  },
+];
+
+const REVIEWS = [
+  { name:"zy", stars:5, text:"Best bot devs. Got my full server bot in under 12 hours. Clean code, clean embeds, 10/10.", avatar:"Z" },
+  { name:"kxiro", stars:5, text:"Ordered Standard and it blew me away. Ticket system is insane and the welcome cards are fire.", avatar:"K" },
+  { name:"marsh", stars:5, text:"Premium package was worth it. Economy, music, the whole thing. Legit team.", avatar:"M" },
+  { name:"volt", stars:4, text:"Solid work. Quick turnaround and they actually listen to feedback. Will order again.", avatar:"V" },
+  { name:"astro", stars:5, text:"Cheapest prices for this quality. Bot looks like I paid way more. Highly recommend.", avatar:"A" },
+  { name:"nyx", stars:5, text:"Needed a custom mod bot ASAP. Delivered in 6 hours. Absolute legends.", avatar:"N" },
+];
+
+const FAQS = [
+  { q:"How long does delivery take?", a:"Most bots are delivered within 12-24 hours depending on the package and complexity. Premium custom builds may take a bit longer." },
+  { q:"What's the difference between packages?", a:"Basic covers moderation, XP, and logging. Advanced adds tickets, infractions, sessions, and notification systems. Premium is a fully custom bot built around your server with ERLC integration, branding, and whatever else you need." },
+  { q:"Do you build for ERLC servers?", a:"Yes! Our Advanced and Premium packages include session systems, ERLC live integration, player lists, and Bloxlink moderation panels designed for roleplay servers." },
+  { q:"Can I request features not listed?", a:"Absolutely. The Premium package includes custom features built specifically for your server. Open a ticket and describe what you need — we'll give you a quote." },
+  { q:"What payment methods do you accept?", a:"PayPal, Cashapp, Crypto, and Robux. All payments handled securely through our ticket system." },
+  { q:"What if I need changes after delivery?", a:"We offer free support after delivery to make adjustments and fix any issues. Just open a ticket and we'll take care of it." },
+];
+
+/* ── Render Functions ─────────────────────────── */
+function renderFeatures(filter) {
+  const grid = document.getElementById("features-grid");
+  const items = filter === "all" ? FEATURES : FEATURES.filter(f => f.cat === filter);
+  grid.innerHTML = items.map((f, i) => `
+    <div class="reveal feature-card" style="transition-delay:${i * 0.04}s">
+      <div class="feature-icon">${f.icon}</div>
+      <h3>${f.title}</h3>
+      <p>${f.desc}</p>
+    </div>
+  `).join("");
+  observeReveals();
+}
+
+function renderSteps() {
+  document.getElementById("steps-grid").innerHTML = STEPS.map((s, i) => `
+    <div class="reveal step-card" style="transition-delay:${i * 0.1}s">
+      <div class="step-bg-num">${s.n}</div>
+      <div class="step-icon">${s.icon}</div>
+      <h3>${s.title}</h3>
+      <p>${s.desc}</p>
+    </div>
+  `).join("");
+}
+
+function renderPricing() {
+  document.getElementById("pricing-grid").innerHTML = PACKAGES.map((p, i) => `
+    <div class="reveal price-card ${p.popular ? 'popular' : ''}" style="transition-delay:${i * 0.1}s">
+      ${p.popular ? '<div class="popular-badge">Popular</div>' : ''}
+      <div class="price-top">
+        <div class="price-icon">${p.icon}</div>
+        <h3>${p.name}</h3>
+        <div class="price-tag">${p.tag}</div>
+        <div class="price-amount">
+          <span class="price-dollar">$</span>
+          <span class="price-num">${p.price}</span>
+          <span class="price-usd">one-time</span>
+        </div>
+      </div>
+      <div class="price-bottom">
+        <div class="price-divider"></div>
+        ${p.includes ? `<div class="price-includes">✦ ${p.includes}, plus:</div>` : ''}
+        <div class="price-section-label">Commands Included</div>
+        <div class="price-cmds">
+          ${p.commands.map(c => `<span class="price-cmd">${c}</span>`).join("")}
+        </div>
+        <div class="price-section-label">Systems Included</div>
+        ${p.systems.map(s => `
+          <div class="price-system">
+            <span class="price-system-icon">${s.emoji}</span>
+            <span class="price-system-text"><strong>${s.name}</strong> — ${s.desc}</span>
+          </div>
+        `).join("")}
+        <a href="${DISCORD}" target="_blank" rel="noreferrer" class="price-btn ${p.popular ? 'pop' : ''}">Get Started ↗</a>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderReviews() {
+  document.getElementById("reviews-grid").innerHTML = REVIEWS.map((r, i) => `
+    <div class="reveal review-card" style="transition-delay:${i * 0.06}s">
+      <div class="review-head">
+        <div class="review-avatar">${r.avatar}</div>
+        <div>
+          <div class="review-name">${r.name}</div>
+          <div class="review-stars">${"⭐".repeat(r.stars)}${"☆".repeat(5 - r.stars)}</div>
+        </div>
+      </div>
+      <p class="review-text">"${r.text}"</p>
+    </div>
+  `).join("");
+}
+
+function renderFAQ() {
+  document.getElementById("faq-list").innerHTML = FAQS.map((f, i) => `
+    <div class="reveal faq-item" style="transition-delay:${i * 0.05}s">
+      <button class="faq-q" onclick="toggleFAQ(this)">
+        ${f.q}
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-a"><p>${f.a}</p></div>
+    </div>
+  `).join("");
+}
+
+function toggleFAQ(btn) {
+  const item = btn.parentElement;
+  const wasOpen = item.classList.contains("open");
+  document.querySelectorAll(".faq-item").forEach(el => el.classList.remove("open"));
+  if (!wasOpen) item.classList.add("open");
+}
+
+/* ── Filter Buttons ───────────────────────────── */
+document.getElementById("filter-btns").addEventListener("click", e => {
+  if (!e.target.classList.contains("filter-btn")) return;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  e.target.classList.add("active");
+  renderFeatures(e.target.dataset.cat);
+});
+
+/* ── Scroll Reveal Observer ───────────────────── */
+function observeReveals() {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll(".reveal:not(.visible)").forEach(el => obs.observe(el));
+}
+
+/* ── Navbar scroll effect ─────────────────────── */
+window.addEventListener("scroll", () => {
+  document.getElementById("navbar").classList.toggle("scrolled", window.scrollY > 50);
+});
+
+/* ── Active nav link on scroll ────────────────── */
+const sections = ["home","features","pricing","reviews","faq"];
+window.addEventListener("scroll", () => {
+  let current = "home";
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 200) current = id;
+  });
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.classList.remove("active");
+    if (link.getAttribute("href") === "#" + current || (current === "home" && link.getAttribute("href") === "#")) {
+      link.classList.add("active");
+    }
+  });
+});
+
+/* ── Crosshair Cursor ─────────────────────────── */
+(function() {
+  const dot = document.getElementById("cursor-dot");
+  const ring = document.getElementById("cursor-ring");
+  let mx = -100, my = -100;
+  let dx = -100, dy = -100, rx = -100, ry = -100;
+  let hovering = false;
+
+  document.addEventListener("mousemove", e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener("mouseover", e => { if (e.target.closest("a,button,.clickable")) hovering = true; });
+  document.addEventListener("mouseout", e => { if (e.target.closest("a,button,.clickable")) hovering = false; });
+
+  function tick() {
+    dx += (mx - dx) * 0.45;
+    dy += (my - dy) * 0.45;
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    dot.style.transform = `translate(${dx - 5}px,${dy - 5}px)`;
+    const s = hovering ? 1.8 : 1;
+    ring.style.transform = `translate(${rx - 22}px,${ry - 22}px) scale(${s})`;
+    ring.style.opacity = hovering ? "0.7" : "0.4";
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ── Background Particle Network ──────────────── */
+(function() {
+  const canvas = document.getElementById("bg-canvas");
+  const ctx = canvas.getContext("2d");
+  let w, h, particles, mouse = { x: -9999, y: -9999 };
+  const PARTICLE_COUNT = 80;
+  const CONNECT_DIST = 140;
+  const MOUSE_DIST = 200;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+
+  function createParticles() {
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 1.5 + 0.5,
+        o: Math.random() * 0.3 + 0.1,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+
+    // Subtle gradient wash that shifts slowly
+    const t = Date.now() * 0.0001;
+    const gx = w * 0.5 + Math.sin(t) * w * 0.2;
+    const gy = h * 0.3 + Math.cos(t * 0.7) * h * 0.15;
+    const grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, w * 0.5);
+    grad.addColorStop(0, "rgba(99,144,255,0.03)");
+    grad.addColorStop(0.5, "rgba(129,140,248,0.015)");
+    grad.addColorStop(1, "transparent");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Second orb
+    const gx2 = w * 0.6 + Math.cos(t * 1.3) * w * 0.25;
+    const gy2 = h * 0.65 + Math.sin(t * 0.9) * h * 0.2;
+    const grad2 = ctx.createRadialGradient(gx2, gy2, 0, gx2, gy2, w * 0.35);
+    grad2.addColorStop(0, "rgba(129,140,248,0.025)");
+    grad2.addColorStop(1, "transparent");
+    ctx.fillStyle = grad2;
+    ctx.fillRect(0, 0, w, h);
+
+    // Update & draw particles
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Wrap around edges
+      if (p.x < -10) p.x = w + 10;
+      if (p.x > w + 10) p.x = -10;
+      if (p.y < -10) p.y = h + 10;
+      if (p.y > h + 10) p.y = -10;
+
+      // Draw particle
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(99,144,255,${p.o})`;
+      ctx.fill();
+
+      // Connect to nearby particles
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECT_DIST) {
+          const alpha = (1 - dist / CONNECT_DIST) * 0.08;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = `rgba(99,144,255,${alpha})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+
+      // Mouse interaction — subtle push
+      const mdx = p.x - mouse.x;
+      const mdy = p.y - mouse.y;
+      const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+      if (mDist < MOUSE_DIST) {
+        const alpha = (1 - mDist / MOUSE_DIST) * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(mouse.x, mouse.y);
+        ctx.strokeStyle = `rgba(99,144,255,${alpha})`;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener("resize", () => { resize(); });
+  document.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  document.addEventListener("mouseleave", () => { mouse.x = -9999; mouse.y = -9999; });
+
+  resize();
+  createParticles();
+  draw();
+})();
+
+/* ── Init ─────────────────────────────────────── */
+renderFeatures("all");
+renderSteps();
+renderPricing();
+renderReviews();
+renderFAQ();
+observeReveals();
+</script>
+</body>
+</html>
