@@ -1021,7 +1021,9 @@ async function submitOrder(){
     saveOrderLocally({
       orderID, package:pkg.name, botName, serverName,
       commands:cmdsArr, extras:extrasArr,
-      color:state.color, payment, timeline, notes:allNotes
+      color:state.color, payment, timeline, notes:allNotes,
+      logoFile: state.logoFile || null,
+      bannerFile: state.bannerFile || null
     });
   }catch(err){
     console.warn("Webhook send failed:",err);
@@ -1144,6 +1146,8 @@ function saveOrderLocally(orderData){
     notes:       orderData.notes,
     discord:     window._currentUser.discord||"",
     email:       window._currentUser.email||"",
+    logo:        orderData.logoFile||null,
+    banner:      orderData.bannerFile||null,
     status:      "pending",
     created_at:  new Date().toISOString()
   });
