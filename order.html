@@ -798,33 +798,56 @@ async function submitOrder(){
   const colorInt=parseInt(state.color.replace("#",""),16);
 
   const webhookPayload={
-    username:"Exotic Utilities — Order System",
+    username:"Exotic Utilities",
+    avatar_url:"https://i.imgur.com/AfFp7pu.png",
     embeds:[{
-      title:"🛒 New Bot Order",
+      title:"New Bot Order",
+      description:`> **Order ID:** \`${orderID}\`\n> **Package:** ${pkg.icon} ${pkg.name} — ${pkg.price}`,
       color:colorInt,
       fields:[
-        {name:"📋 Order ID",value:`\`${orderID}\``,inline:true},
-        {name:"📦 Package",value:`${pkg.icon} **${pkg.name}** (${pkg.price})`,inline:true},
-        {name:"\u200b",value:"\u200b",inline:false},
-        {name:"👤 Discord Username",value:username,inline:true},
-        {name:"🆔 Discord User ID",value:`\`${userId}\``,inline:true},
-        {name:"🔗 Server Invite",value:serverInvite,inline:false},
-        {name:"🤖 Bot Name",value:botName,inline:true},
-        {name:"🌐 Server Name",value:serverName,inline:true},
-        {name:"🎨 Embed Color",value:`\`${state.color}\``,inline:true},
-        {name:`⚡ Commands (${cmdsArr.length})`,value:cmdsArr.length>0?cmdsArr.join(", "):"None",inline:false},
-        {name:"➕ Add-Ons",value:extrasArr.length>0?extrasArr.join(", "):"None",inline:false},
-        {name:"💳 Payment",value:payment,inline:true},
-        {name:"⏱️ Timeline",value:timeline,inline:true},
-        {name:"📝 Notes",value:allNotes.length>1000?allNotes.slice(0,997)+"...":allNotes,inline:false},
+        {
+          name:"👤  Customer",
+          value:`**Username:** ${username}\n**User ID:** \`${userId}\`\n**Server Invite:** ${serverInvite}`,
+          inline:false
+        },
+        {
+          name:"🤖  Bot Details",
+          value:`**Bot Name:** ${botName}\n**Server Name:** ${serverName}\n**Embed Color:** \`${state.color}\``,
+          inline:false
+        },
+        {
+          name:`⚡  Commands Selected (${cmdsArr.length})`,
+          value:cmdsArr.length>0 ? cmdsArr.map(c=>`\`${c}\``).join(" ") : "*None selected*",
+          inline:false
+        },
+        ...(extrasArr.length>0?[{
+          name:"➕  Add-Ons",
+          value:extrasArr.map(e=>`• ${e}`).join("\n"),
+          inline:false
+        }]:[]),
+        {
+          name:"💳  Payment",
+          value:payment,
+          inline:true
+        },
+        {
+          name:"⏱️  Timeline",
+          value:timeline,
+          inline:true
+        },
+        ...(allNotes&&allNotes!=="None"?[{
+          name:"📝  Notes",
+          value:allNotes.length>1000?allNotes.slice(0,997)+"...":allNotes,
+          inline:false
+        }]:[]),
       ],
-      footer:{text:`Exotic Utilities Order System • ${new Date().toLocaleString()}`},
+      footer:{text:"Exotic Utilities Order System"},
       timestamp:new Date().toISOString(),
     }]
   };
 
   try{
-    if(WEBHOOK_URL!=="YOUR_DISCORD_WEBHOOK_URL_HERE"){
+    if(WEBHOOK_URL && WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")){
       await fetch(WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(webhookPayload)});
     }
   }catch(err){console.warn("Webhook send failed:",err);}
