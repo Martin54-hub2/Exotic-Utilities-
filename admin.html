@@ -20,7 +20,8 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;cursor:none;line-height:1.6;}
-a,button,select,input{cursor:none;}
+a,button,select{cursor:none;}
+input,textarea{cursor:text;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--gray-dk);border-radius:3px;}
 ::selection{background:var(--blue-dim);color:var(--blue);}
 #cursor-dot{position:fixed;top:0;left:0;width:10px;height:10px;border-radius:50%;background:var(--blue);z-index:9999;pointer-events:none;box-shadow:0 0 14px var(--blue-glow);mix-blend-mode:screen;transform:translate(-100px,-100px);}
@@ -35,8 +36,9 @@ a,button,select,input{cursor:none;}
 .gate-title{font-size:24px;font-weight:900;margin-bottom:6px;}
 .gate-sub{font-size:14px;color:var(--gray-lt);margin-bottom:32px;}
 .pin-row{display:flex;gap:12px;justify-content:center;margin-bottom:8px;}
-.pin-input{width:56px;height:64px;border-radius:14px;background:var(--surface);border:2px solid var(--border);color:var(--white);font-size:24px;font-weight:800;text-align:center;font-family:'JetBrains Mono';outline:none;transition:border-color .2s;}
-.pin-input:focus{border-color:var(--border-h);}
+.pin-input{width:56px;height:64px;border-radius:14px;background:#0a0f1a;border:2px solid rgba(255,255,255,0.07);color:#f0f2f8;font-size:24px;font-weight:800;text-align:center;font-family:'JetBrains Mono';outline:none;transition:border-color .2s,box-shadow .2s;caret-color:#6390ff;-webkit-text-fill-color:#f0f2f8;appearance:none;-webkit-appearance:none;}
+.pin-input:focus{border-color:rgba(99,144,255,0.5);box-shadow:0 0 0 3px rgba(99,144,255,0.1);}
+.pin-input:-webkit-autofill,.pin-input:-webkit-autofill:hover,.pin-input:-webkit-autofill:focus,.pin-input:-webkit-autofill:active{-webkit-box-shadow:0 0 0 100px #0a0f1a inset!important;-webkit-text-fill-color:#f0f2f8!important;caret-color:#6390ff;border-color:rgba(99,144,255,0.3)!important;}
 .pin-err{font-size:13px;color:var(--red);min-height:20px;margin:8px 0 14px;}
 .pin-btn{width:100%;padding:15px;border-radius:13px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:800;font-size:15px;border:none;font-family:'Outfit';box-shadow:0 0 28px var(--blue-glow);transition:transform .2s;}
 .pin-btn:hover{transform:translateY(-1px);}
@@ -344,57 +346,57 @@ function checkPin(){
 const JBIN_KEY  = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
 const JBIN_BASE = "https://api.jsonbin.io/v3";
 
-async function getBinId(){{
+async function getBinId(){
   let id = localStorage.getItem("eu_bin_id");
   if(id) return id;
-  try{{
-    const res = await fetch(JBIN_BASE+"/b",{{
+  try{
+    const res = await fetch(JBIN_BASE+"/b",{
       method:"POST",
-      headers:{{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"}},
-      body:JSON.stringify({{orders:[]}})
-    }});
+      headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
+      body:JSON.stringify({orders:[]})
+    });
     const data = await res.json();
     id = data.metadata && data.metadata.id;
-    if(id){{ localStorage.setItem("eu_bin_id", id); }}
-  }}catch(e){{ console.error("Bin create failed",e); }}
+    if(id){ localStorage.setItem("eu_bin_id", id); }
+  }catch(e){ console.error("Bin create failed",e); }
   return id;
-}}
+}
 
-async function jbinRead(){{
-  try{{
+async function jbinRead(){
+  try{
     const id = await getBinId();
     if(!id) return [];
-    const res = await fetch(JBIN_BASE+"/b/"+id+"/latest",{{
-      headers:{{"X-Master-Key":JBIN_KEY}}
-    }});
+    const res = await fetch(JBIN_BASE+"/b/"+id+"/latest",{
+      headers:{"X-Master-Key":JBIN_KEY}
+    });
     const data = await res.json();
     return Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
-  }}catch(e){{ console.error("jbinRead failed",e); return []; }}
-}}
+  }catch(e){ console.error("jbinRead failed",e); return []; }
+}
 
-async function jbinWrite(orders){{
+async function jbinWrite(orders){
   const id = await getBinId();
   if(!id) throw new Error("No bin ID");
-  await fetch(JBIN_BASE+"/b/"+id,{{
+  await fetch(JBIN_BASE+"/b/"+id,{
     method:"PUT",
-    headers:{{"Content-Type":"application/json","X-Master-Key":JBIN_KEY}},
-    body:JSON.stringify({{orders}})
-  }});
-}}
+    headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY},
+    body:JSON.stringify({orders})
+  });
+}
 
-async function jbinUpdateOrder(orderId, patch){{
+async function jbinUpdateOrder(orderId, patch){
   const orders = await jbinRead();
-  const idx = orders.findIndex(function(o){{ return o.order_id===orderId; }});
-  if(idx>=0){{ orders[idx]=Object.assign({{}},orders[idx],patch); await jbinWrite(orders); }}
+  const idx = orders.findIndex(function(o){ return o.order_id===orderId; });
+  if(idx>=0){ orders[idx]=Object.assign({},orders[idx],patch); await jbinWrite(orders); }
   return orders;
-}}
+}
 
-async function jbinDeleteOrder(orderId){{
+async function jbinDeleteOrder(orderId){
   const orders = await jbinRead();
-  const filtered = orders.filter(function(o){{ return o.order_id!==orderId; }});
+  const filtered = orders.filter(function(o){ return o.order_id!==orderId; });
   await jbinWrite(filtered);
   return filtered;
-}}
+}
 
 async function loadOrders(){
   const el=document.getElementById("orders-list");
@@ -484,7 +486,7 @@ function renderOrders(){
       <div class="odetail" id="odetail-${oid}">
         <div class="odetail-inner">
 
-          <!-- Details grid -->
+          
           <div class="detail-grid">
             <div class="dfield"><div class="dlabel">Bot Name</div><div class="dval">${o.bot_name||"—"}</div></div>
             <div class="dfield"><div class="dlabel">Server</div><div class="dval">${o.server_name||"—"}</div></div>
@@ -495,16 +497,16 @@ function renderOrders(){
             ${extras.length?`<div class="dfield"><div class="dlabel">Add-Ons</div><div class="dval">${extras.join(", ")}</div></div>`:""}
           </div>
 
-          <!-- Commands -->
+          
           ${cmds.length?`<div class="cmds-section"><div class="cmds-label">Commands (${cmds.length})</div><div class="cmds-wrap">${cmds.map(c=>`<span class="cmd-chip">${c}</span>`).join("")}</div></div>`:""}
 
-          <!-- Customer notes -->
+          
           ${o.notes&&o.notes.trim()&&o.notes!=="None"?`<div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;">Customer Notes</div><div class="notes-box">${o.notes}</div>`:""}
 
-          <!-- Admin notes -->
+          
           ${o.admin_notes?`<div style="font-size:10px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;">Admin Notes</div><div class="notes-box" style="border-color:rgba(245,158,11,.15);color:var(--yellow);">${o.admin_notes}</div>`:""}
 
-          <!-- Assets -->
+          
           <div style="font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Assets</div>
           <div class="assets-row">
             ${hasLogo?`
@@ -521,7 +523,7 @@ function renderOrders(){
               </div>`:(hasLogo?`<div class="no-assets" style="margin-left:12px;">No banner uploaded</div>`:"")}
           </div>
 
-          <!-- Action bar -->
+          
           <div class="action-bar">
             <div class="action-label">Status:</div>
             <select class="status-sel" id="ssel-${oid}">
@@ -736,27 +738,44 @@ function signOut(){
 }
 
 /* ── Boot ────────────────────────────────── */
-if(sessionStorage.getItem("eu_admin")==="1"){
-  document.getElementById("gate").style.display="none";
-  document.getElementById("wrap").classList.add("show");
-  loadOrders();
-} else {
-  document.getElementById("p1").focus();
-}
+document.addEventListener("DOMContentLoaded", function(){
+  if(sessionStorage.getItem("eu_admin")==="1"){
+    document.getElementById("gate").style.display="none";
+    document.getElementById("wrap").classList.add("show");
+    loadOrders();
+  } else {
+    setTimeout(function(){ document.getElementById("p1").focus(); }, 100);
+  }
 
-/* ── Close modal on overlay click ─────────── */
-document.getElementById("edit-modal").addEventListener("click",function(e){
-  if(e.target===this) closeEdit();
+  /* Close modal on overlay click */
+  document.getElementById("edit-modal").addEventListener("click",function(e){
+    if(e.target===this) closeEdit();
+  });
 });
 
 /* ── Cursor ──────────────────────────────── */
 (function(){
-  const dot=document.getElementById("cursor-dot"),ring=document.getElementById("cursor-ring");
+  const dot=document.getElementById("cursor-dot");
+  const ring=document.getElementById("cursor-ring");
+  if(!dot||!ring) return;
   let mx=-100,my=-100,dx=-100,dy=-100,rx=-100,ry=-100,hov=false;
-  document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;});
-  document.addEventListener("mouseover",e=>{if(e.target.closest("a,button,.ocard-header,.stat"))hov=true;});
-  document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.ocard-header,.stat"))hov=false;});
-  function tick(){dx+=(mx-dx)*.45;dy+=(my-dy)*.45;rx+=(mx-rx)*.12;ry+=(my-ry)*.12;dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;ring.style.opacity=hov?.7:.4;requestAnimationFrame(tick);}tick();
+  document.addEventListener("mousemove",function(e){mx=e.clientX;my=e.clientY;});
+  document.addEventListener("mouseover",function(e){
+    try{ if(e.target&&e.target.closest&&e.target.closest("a,button,.ocard-header,.stat"))hov=true; }catch(err){}
+  });
+  document.addEventListener("mouseout",function(e){
+    try{ if(e.target&&e.target.closest&&e.target.closest("a,button,.ocard-header,.stat"))hov=false; }catch(err){}
+  });
+  function tick(){
+    dx+=(mx-dx)*.45; dy+=(my-dy)*.45;
+    rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+    dot.style.transform="translate("+(dx-5)+"px,"+(dy-5)+"px)";
+    var s=hov?1.8:1;
+    ring.style.transform="translate("+(rx-22)+"px,"+(ry-22)+"px) scale("+s+")";
+    ring.style.opacity=hov?"0.7":"0.4";
+    requestAnimationFrame(tick);
+  }
+  tick();
 })();
 </script>
 </body>
