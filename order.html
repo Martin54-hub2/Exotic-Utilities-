@@ -301,7 +301,7 @@ img{max-width:100%;}
   </div>
 </nav>
 
-<section class="page-hero">
+<section class="page-hero" id="page-hero" style="display:none;">
   <div class="page-hero-orb"></div>
   <a href="index.html" class="back-link"><span class="back-arrow">←</span> Back to Home</a>
   <h1>Build Your <span class="grad">Custom Bot</span></h1>
@@ -322,7 +322,7 @@ img{max-width:100%;}
   </div>
 </section>
 
-<div class="builder-wrap">
+<div class="builder-wrap" id="builder-wrap" style="display:none;">
 
   <!-- LEFT -->
   <div class="builder-left">
@@ -1014,6 +1014,13 @@ async function submitOrder(){
     const res=await fetch(WEBHOOK_URL,{method:"POST",body:form});
     if(!res.ok) throw new Error("Webhook returned "+res.status);
     markOrderSent();
+
+    // Save to Supabase for dashboard
+    await saveOrderToSupabase({
+      orderID, package:pkg.name, botName, serverName,
+      commands:cmdsArr, extras:extrasArr,
+      color:state.color, payment, timeline, notes:allNotes
+    });
   }catch(err){
     console.warn("Webhook send failed:",err);
     btn.disabled=false;btn.textContent="🚀 Place Order";
@@ -1080,32 +1087,45 @@ function observeReveals(){
 /* ═══════════════════════════
    AUTH — Require login to order
 ═══════════════════════════ */
-const SUPABASE_URL  = "https://ietezconrmnmkrgxlyauk.supabase.co";
+const SUPABASE_URL  = "https://ietezcnrmnmkrgxlyauk.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM";
 
-// Load Supabase then check auth
 (function loadSupabase(){
   const s=document.createElement("script");
   s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-  s.onload=function(){
+  s.onload=async function(){
     const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-    sb.auth.getSession().then(({data:{session}})=>{
-      if(!session){
-        // Not logged in — show gate, hide builder
-        document.getElementById("auth-gate").style.display="flex";
-        document.querySelector(".page-hero").style.display="none";
-        document.querySelector(".builder-wrap").style.display="none";
-        document.querySelector(".footer").style.display="none";
-      } else {
-        // Logged in — show user bar with their email
-        const bar=document.getElementById("auth-user-bar");
-        document.getElementById("auth-user-email").textContent=session.user.email;
-        bar.classList.add("show");
-        // Push content down to account for user bar
-        document.querySelector(".page-hero").style.paddingTop="170px";
-      }
-    });
     window._sb=sb;
+    const {data:{session}}=await sb.auth.getSession();
+
+    if(!session){
+      // Not logged in — show gate only
+      document.getElementById("auth-gate").style.display="flex";
+    } else {
+      // Logged in — show builder
+      document.getElementById("page-hero").style.display="";
+      document.getElementById("builder-wrap").style.display="";
+      document.querySelector(".footer").style.display="";
+      // Show user bar
+      const bar=document.getElementById("auth-user-bar");
+      const discord=session.user.user_metadata?.discord_username||"";
+      document.getElementById("auth-user-email").textContent=discord||session.user.email;
+      bar.classList.add("show");
+      // Store user info globally for order submission
+      window._currentUser={
+        id: session.user.id,
+        email: session.user.email,
+        discord: discord
+      };
+      init();
+    }
+  };
+  s.onerror=function(){
+    // If Supabase fails to load, still show builder (fallback)
+    document.getElementById("page-hero").style.display="";
+    document.getElementById("builder-wrap").style.display="";
+    document.querySelector(".footer").style.display="";
+    init();
   };
   document.head.appendChild(s);
 })();
@@ -1115,7 +1135,29 @@ async function signOut(){
   window.location.href="login.html";
 }
 
-init();
+/* Save order to Supabase orders table */
+async function saveOrderToSupabase(orderData){
+  if(!window._sb||!window._currentUser) return;
+  try{
+    await window._sb.from("orders").insert([{
+      user_id:    window._currentUser.id,
+      email:      window._currentUser.email,
+      discord:    window._currentUser.discord,
+      order_id:   orderData.orderID,
+      package:    orderData.package,
+      bot_name:   orderData.botName,
+      server_name:orderData.serverName,
+      commands:   orderData.commands,
+      extras:     orderData.extras,
+      color:      orderData.color,
+      payment:    orderData.payment,
+      timeline:   orderData.timeline,
+      notes:      orderData.notes,
+      status:     "pending",
+      created_at: new Date().toISOString()
+    }]);
+  }catch(e){console.warn("Order save failed:",e);}
+}
 </script>
 </body>
 </html>
