@@ -265,15 +265,48 @@ function showDashboard(user){
   observeReveals();
 }
 
-function loadOrders(user){
-  // Load orders from localStorage (keyed by Discord ID)
-  const key = "eu_orders_" + user.id;
-  let orders = [];
-  try{ orders = JSON.parse(localStorage.getItem(key)) || []; }catch(e){}
+async function loadOrders(user){
+  const JBIN_KEY  = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
+  const JBIN_BASE = "https://api.jsonbin.io/v3";
 
-  document.getElementById("stat-orders").textContent = orders.length;
-  document.getElementById("stat-delivered").textContent = orders.filter(o=>o.status==="delivered").length;
-  renderOrders(orders);
+  // Show local orders instantly while fetching from cloud
+  const localKey = "eu_orders_" + user.id;
+  let localOrders = [];
+  try{ localOrders = JSON.parse(localStorage.getItem(localKey)) || []; }catch(e){}
+  if(localOrders.length) renderOrders(localOrders);
+
+  // Then fetch from JSONBin (central) and filter to this user's orders
+  try{
+    const binId = localStorage.getItem("eu_bin_id");
+    if(binId){
+      const res = await fetch(JBIN_BASE+"/b/"+binId+"/latest",{
+        headers:{"X-Master-Key":JBIN_KEY}
+      });
+      const data = await res.json();
+      const all = Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
+      // Match by discord_id OR by discord username as fallback
+      const mine = all.filter(o =>
+        o.discord_id === user.id ||
+        (o.discord && user.username && o.discord.toLowerCase() === user.username.toLowerCase())
+      );
+      if(mine.length){
+        // Merge — cloud has status updates, local has images
+        const merged = mine.map(cloudOrder => {
+          const local = localOrders.find(l => l.order_id === cloudOrder.order_id);
+          return local ? Object.assign({}, cloudOrder, {logo: local.logo||cloudOrder.logo, banner: local.banner||cloudOrder.banner}) : cloudOrder;
+        });
+        renderOrders(merged);
+        document.getElementById("stat-orders").textContent = merged.length;
+        document.getElementById("stat-delivered").textContent = merged.filter(o=>o.status==="delivered").length;
+        return;
+      }
+    }
+  }catch(e){ console.warn("Cloud fetch failed, showing local orders", e); }
+
+  // Fallback to local only
+  document.getElementById("stat-orders").textContent = localOrders.length;
+  document.getElementById("stat-delivered").textContent = localOrders.filter(o=>o.status==="delivered").length;
+  renderOrders(localOrders);
 }
 
 function renderOrders(orders){
