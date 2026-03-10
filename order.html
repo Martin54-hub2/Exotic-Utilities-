@@ -1142,6 +1142,8 @@ function saveOrderLocally(orderData){
     payment:     orderData.payment,
     timeline:    orderData.timeline,
     notes:       orderData.notes,
+    discord:     window._currentUser.discord||"",
+    email:       window._currentUser.email||"",
     status:      "pending",
     created_at:  new Date().toISOString()
   });

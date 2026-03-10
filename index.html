@@ -647,7 +647,7 @@ img { max-width: 100%; }
 <footer class="footer">
   <div class="footer-logo">
     <div class="footer-logo-icon"><img src="logo.png" alt="EU" class="footer-logo-img"></div>
-    <span class="footer-copy">© 2025 Exotic Utilities</span>
+    <span class="footer-copy" id="secret-admin" onclick="secretClick()" style="user-select:none;">© 2025 Exotic Utilities</span>
   </div>
   <div class="footer-links">
     <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Discord</a>
@@ -663,19 +663,13 @@ img { max-width: 100%; }
 /* ── Data ─────────────────────────────────────── */
 const DISCORD = "https://discord.gg/tfvNFNmHMY";
 
-// Smart nav: show Dashboard if logged in, Sign In if not
+// Smart nav: show Dashboard if logged in via Discord, Sign In if not
 (function(){
-  const s=document.createElement("script");
-  s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-  s.onload=async function(){
-    const sb=supabase.createClient("https://ietezcnrmnmkrgxlyauk.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM");
-    const {data:{session}}=await sb.auth.getSession();
-    if(session){
-      document.getElementById("nav-signin").style.display="none";
-      document.getElementById("nav-dashboard").style.display="";
-    }
-  };
-  document.head.appendChild(s);
+  const token = localStorage.getItem("eu_discord_token");
+  if(token){
+    document.getElementById("nav-signin").style.display="none";
+    document.getElementById("nav-dashboard").style.display="";
+  }
 })();
 
 const FEATURES = [
@@ -1061,6 +1055,18 @@ setTimeout(() => {
   document.getElementById("loader").classList.add("done");
   document.body.style.overflow = "";
 }, 3000);
+
+// Secret admin access — click copyright 5 times fast
+let secretClicks = 0, secretTimer;
+function secretClick(){
+  secretClicks++;
+  clearTimeout(secretTimer);
+  if(secretClicks >= 5){
+    secretClicks = 0;
+    window.location.href = "admin.html";
+  }
+  secretTimer = setTimeout(() => secretClicks = 0, 2000);
+}
 </script>
 </body>
 </html>
