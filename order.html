@@ -1017,8 +1017,8 @@ async function submitOrder(){
     if(!res.ok) throw new Error("Webhook returned "+res.status);
     markOrderSent();
 
-    // Save to Supabase for dashboard
-    await saveOrderToSupabase({
+    // Save to localStorage for dashboard
+    saveOrderLocally({
       orderID, package:pkg.name, botName, serverName,
       commands:cmdsArr, extras:extrasArr,
       color:state.color, payment, timeline, notes:allNotes
@@ -1087,78 +1087,65 @@ function observeReveals(){
 })();
 
 /* ═══════════════════════════
-   AUTH — Require login to order
+   AUTH — Discord OAuth check
 ═══════════════════════════ */
-const SUPABASE_URL  = "https://ietezcnrmnmkrgxlyauk.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM";
+(function checkAuth(){
+  const userStr = localStorage.getItem("eu_discord_user");
+  const user = userStr ? JSON.parse(userStr) : null;
 
-(function loadSupabase(){
-  const s=document.createElement("script");
-  s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-  s.onload=async function(){
-    const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-    window._sb=sb;
-    const {data:{session}}=await sb.auth.getSession();
+  if(!user || !user.id){
+    // Not logged in — show gate
+    document.getElementById("auth-gate").style.display="flex";
+    return;
+  }
 
-    if(!session){
-      // Not logged in — show gate only
-      document.getElementById("auth-gate").style.display="flex";
-    } else {
-      // Logged in — show builder
-      document.getElementById("page-hero").style.display="";
-      document.getElementById("builder-wrap").style.display="";
-      document.querySelector(".footer").style.display="";
-      // Show user bar
-      const bar=document.getElementById("auth-user-bar");
-      const discord=session.user.user_metadata?.discord_username||"";
-      document.getElementById("auth-user-email").textContent=discord||session.user.email;
-      bar.classList.add("show");
-      // Store user info globally for order submission
-      window._currentUser={
-        id: session.user.id,
-        email: session.user.email,
-        discord: discord
-      };
-      init();
-    }
-  };
-  s.onerror=function(){
-    // If Supabase fails to load, still show builder (fallback)
-    document.getElementById("page-hero").style.display="";
-    document.getElementById("builder-wrap").style.display="";
-    document.querySelector(".footer").style.display="";
-    init();
-  };
-  document.head.appendChild(s);
+  // Logged in — show builder
+  document.getElementById("page-hero").style.display="";
+  document.getElementById("builder-wrap").style.display="";
+  document.querySelector(".footer").style.display="";
+
+  // Show user bar with Discord avatar
+  const bar = document.getElementById("auth-user-bar");
+  const displayName = user.global_name || user.username;
+  document.getElementById("auth-user-email").textContent = `@${user.username}`;
+  if(user.avatar){
+    const avatarEl = document.createElement("img");
+    avatarEl.src = user.avatar;
+    avatarEl.style.cssText = "width:24px;height:24px;border-radius:50%;flex-shrink:0;";
+    bar.querySelector(".auth-user-bar-left").prepend(avatarEl);
+  }
+  bar.classList.add("show");
+  window._currentUser = { id: user.id, username: user.username, discord: user.username, email: user.email||"", displayName };
+  init();
 })();
 
-async function signOut(){
-  if(window._sb) await window._sb.auth.signOut();
-  window.location.href="login.html";
+function signOut(){
+  localStorage.removeItem("eu_discord_token");
+  localStorage.removeItem("eu_discord_token_type");
+  localStorage.removeItem("eu_discord_user");
+  window.location.href = "login.html";
 }
 
-/* Save order to Supabase orders table */
-async function saveOrderToSupabase(orderData){
-  if(!window._sb||!window._currentUser) return;
-  try{
-    await window._sb.from("orders").insert([{
-      user_id:    window._currentUser.id,
-      email:      window._currentUser.email,
-      discord:    window._currentUser.discord,
-      order_id:   orderData.orderID,
-      package:    orderData.package,
-      bot_name:   orderData.botName,
-      server_name:orderData.serverName,
-      commands:   orderData.commands,
-      extras:     orderData.extras,
-      color:      orderData.color,
-      payment:    orderData.payment,
-      timeline:   orderData.timeline,
-      notes:      orderData.notes,
-      status:     "pending",
-      created_at: new Date().toISOString()
-    }]);
-  }catch(e){console.warn("Order save failed:",e);}
+/* Save order to localStorage for dashboard */
+function saveOrderLocally(orderData){
+  if(!window._currentUser) return;
+  const key = `eu_orders_${window._currentUser.id}`;
+  const orders = JSON.parse(localStorage.getItem(key)||"[]");
+  orders.unshift({
+    order_id:    orderData.orderID,
+    package:     orderData.package,
+    bot_name:    orderData.botName,
+    server_name: orderData.serverName,
+    commands:    orderData.commands,
+    extras:      orderData.extras,
+    color:       orderData.color,
+    payment:     orderData.payment,
+    timeline:    orderData.timeline,
+    notes:       orderData.notes,
+    status:      "pending",
+    created_at:  new Date().toISOString()
+  });
+  localStorage.setItem(key, JSON.stringify(orders));
 }
 </script>
 </body>

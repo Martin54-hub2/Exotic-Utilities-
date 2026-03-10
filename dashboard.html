@@ -10,17 +10,21 @@
 <style>
 :root{--bg:#030712;--surface:#0a0f1a;--card:#0c1222;--card-h:#101829;--border:rgba(255,255,255,0.05);--border-h:rgba(99,144,255,0.3);--blue:#6390ff;--blue-bright:#7ba4ff;--blue-dim:rgba(99,144,255,0.1);--blue-glow:rgba(99,144,255,0.3);--accent:#818cf8;--white:#f0f2f8;--gray:#6b7280;--gray-lt:#9ca3af;--gray-dk:#1f2937;--green:#22c55e;--green-dim:rgba(34,197,94,0.1);--yellow:#f59e0b;--red:#ef4444;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--white);overflow-x:hidden;cursor:none;line-height:1.6;}
 a,button{cursor:none;text-decoration:none;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--gray-dk);border-radius:3px;}
 ::selection{background:var(--blue-dim);color:var(--blue);}
-
 #cursor-dot{position:fixed;top:0;left:0;width:10px;height:10px;border-radius:50%;background:var(--blue);z-index:9999;pointer-events:none;box-shadow:0 0 14px var(--blue-glow);mix-blend-mode:screen;transform:translate(-100px,-100px);}
 #cursor-ring{position:fixed;top:0;left:0;width:44px;height:44px;z-index:9998;pointer-events:none;opacity:0.4;transition:opacity 0.2s,transform 0.18s ease;transform:translate(-100px,-100px);}
 
+/* Loading */
+.page-loading{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.page-loading-spinner{width:44px;height:44px;border:3px solid rgba(99,144,255,0.15);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
+.page-loading-text{font-size:14px;color:var(--gray);font-weight:500;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
 /* Nav */
-.nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(3,7,18,0.92);backdrop-filter:blur(24px) saturate(1.4);border-bottom:1px solid var(--border);}
+.nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(3,7,18,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);}
 .nav-inner{max-width:1200px;margin:0 auto;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:72px;}
 .nav-logo{display:flex;align-items:center;gap:12px;color:var(--white);}
 .nav-logo-icon{width:38px;height:38px;border-radius:10px;overflow:hidden;box-shadow:0 0 20px var(--blue-glow);}
@@ -30,66 +34,37 @@ a,button{cursor:none;text-decoration:none;}
 .nav-links{display:flex;gap:6px;align-items:center;}
 .nav-link{color:var(--gray-lt);padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;transition:all 0.2s;}
 .nav-link:hover,.nav-link.active{color:var(--blue);background:var(--blue-dim);}
-.nav-cta{padding:10px 22px;border-radius:10px;margin-left:8px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;font-size:14px;box-shadow:0 0 24px var(--blue-glow);transition:transform 0.2s;}
-.nav-signout{padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);color:var(--gray-lt);font-size:14px;font-weight:500;transition:all 0.2s;font-family:'Outfit';}
+.nav-user{display:flex;align-items:center;gap:10px;}
+.nav-avatar{width:34px;height:34px;border-radius:50%;border:2px solid rgba(99,144,255,0.3);overflow:hidden;background:var(--blue-dim);}
+.nav-avatar img{width:100%;height:100%;object-fit:cover;}
+.nav-username{font-size:14px;font-weight:600;color:var(--white);}
+.nav-signout{padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);color:var(--gray-lt);font-size:13px;font-weight:600;font-family:'Outfit';transition:all 0.2s;margin-left:4px;}
 .nav-signout:hover{border-color:var(--border-h);color:var(--white);}
-
-/* Loading */
-.page-loading{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
-.page-loading-spinner{width:40px;height:40px;border:3px solid var(--gray-dk);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
-.page-loading-text{font-size:14px;color:var(--gray);font-weight:500;}
-@keyframes spin{to{transform:rotate(360deg);}}
 
 /* Layout */
 .dash-wrap{max-width:1100px;margin:0 auto;padding:100px 24px 80px;display:none;}
 .dash-wrap.show{display:block;}
 
-/* Profile banner */
+/* Profile */
 .dash-profile{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;margin-bottom:24px;display:flex;align-items:center;gap:24px;position:relative;overflow:hidden;}
 .dash-profile::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--accent));}
-.dash-avatar{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--blue-dim),rgba(129,140,248,0.15));border:2px solid rgba(99,144,255,0.2);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:var(--blue);flex-shrink:0;}
+.dash-avatar-wrap{position:relative;flex-shrink:0;}
+.dash-avatar{width:76px;height:76px;border-radius:50%;border:3px solid rgba(99,144,255,0.25);overflow:hidden;background:var(--blue-dim);}
+.dash-avatar img{width:100%;height:100%;object-fit:cover;}
+.dash-avatar-initials{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--blue-dim),rgba(129,140,248,0.15));border:3px solid rgba(99,144,255,0.25);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:var(--blue);}
+.discord-badge{position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);}
+.discord-badge svg{width:12px;height:12px;}
 .dash-profile-info{flex:1;}
 .dash-name{font-size:22px;font-weight:800;margin-bottom:4px;}
-.dash-email{font-size:13px;color:var(--gray);display:flex;align-items:center;gap:6px;}
+.dash-sub{font-size:13px;color:var(--gray);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .dash-badges{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 .dash-badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(99,144,255,0.15);}
 .dash-badge.green{background:var(--green-dim);color:var(--green);border-color:rgba(34,197,94,0.15);}
-.dash-stats{display:flex;gap:8px;margin-left:auto;}
+.dash-badge.discord{background:rgba(88,101,242,0.1);color:#7289da;border-color:rgba(88,101,242,0.2);}
+.dash-stats{display:flex;gap:8px;margin-left:auto;flex-shrink:0;}
 .dash-stat{text-align:center;padding:14px 20px;background:var(--surface);border-radius:12px;border:1px solid var(--border);min-width:80px;}
 .dash-stat-val{font-size:22px;font-weight:800;color:var(--blue);}
 .dash-stat-label{font-size:11px;color:var(--gray);margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
-
-/* Section */
-.dash-section{margin-bottom:32px;}
-.dash-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.dash-section-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;}
-.dash-section-title::before{content:'';width:3px;height:16px;background:var(--blue);border-radius:2px;box-shadow:0 0 8px var(--blue-glow);}
-
-/* Order cards */
-.orders-list{display:flex;flex-direction:column;gap:12px;}
-.order-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;transition:border-color 0.2s;cursor:pointer;}
-.order-card:hover{border-color:rgba(99,144,255,0.15);}
-.order-card-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
-.order-card-id{font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:var(--blue);}
-.order-card-pkg{font-size:13px;font-weight:700;color:var(--white);}
-.order-card-date{font-size:12px;color:var(--gray);margin-left:auto;}
-.order-status{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
-.order-status.pending{background:rgba(245,158,11,0.1);color:var(--yellow);border:1px solid rgba(245,158,11,0.2);}
-.order-status.building{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(99,144,255,0.2);}
-.order-status.delivered{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
-.order-card-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
-.order-field{display:flex;flex-direction:column;gap:2px;}
-.order-field-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;}
-.order-field-val{font-size:13px;color:var(--gray-lt);font-weight:500;}
-.order-card-cmds{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;}
-.order-cmd-chip{padding:2px 8px;border-radius:5px;font-size:10px;font-family:'JetBrains Mono';color:var(--blue-bright);background:rgba(99,144,255,0.06);border:1px solid rgba(99,144,255,0.09);}
-
-/* Empty state */
-.empty-state{text-align:center;padding:60px 24px;background:var(--card);border:1px solid var(--border);border-radius:16px;}
-.empty-icon{font-size:44px;margin-bottom:14px;}
-.empty-title{font-size:18px;font-weight:700;margin-bottom:8px;}
-.empty-sub{font-size:14px;color:var(--gray);margin-bottom:24px;}
-.empty-btn{display:inline-block;padding:12px 28px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;font-size:14px;box-shadow:0 0 20px var(--blue-glow);}
 
 /* Quick actions */
 .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
@@ -99,36 +74,54 @@ a,button{cursor:none;text-decoration:none;}
 .quick-action-text{font-size:14px;font-weight:600;}
 .quick-action-sub{font-size:12px;color:var(--gray);margin-top:2px;}
 
-/* Skeleton loader */
-.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card-h) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* Section */
+.dash-section{margin-bottom:32px;}
+.dash-section-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.dash-section-title::before{content:'';width:3px;height:16px;background:var(--blue);border-radius:2px;box-shadow:0 0 8px var(--blue-glow);}
+
+/* Orders */
+.orders-list{display:flex;flex-direction:column;gap:12px;}
+.order-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;transition:border-color 0.2s;}
+.order-card:hover{border-color:rgba(99,144,255,0.15);}
+.order-card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.order-card-id{font-family:'JetBrains Mono';font-size:13px;font-weight:600;color:var(--blue);}
+.order-card-pkg{font-size:13px;font-weight:700;color:var(--white);}
+.order-card-date{font-size:12px;color:var(--gray);margin-left:auto;}
+.order-status{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.order-status.pending{background:rgba(245,158,11,0.1);color:var(--yellow);border:1px solid rgba(245,158,11,0.2);}
+.order-status.building{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(99,144,255,0.2);}
+.order-status.delivered{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
+.order-card-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.order-field-label{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;}
+.order-field-val{font-size:13px;color:var(--gray-lt);font-weight:500;margin-top:2px;}
+.order-card-cmds{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:5px;}
+.order-cmd-chip{padding:2px 8px;border-radius:5px;font-size:10px;font-family:'JetBrains Mono';color:var(--blue-bright);background:rgba(99,144,255,0.06);border:1px solid rgba(99,144,255,0.09);}
+
+/* Empty */
+.empty-state{text-align:center;padding:60px 24px;background:var(--card);border:1px solid var(--border);border-radius:16px;}
+.empty-icon{font-size:44px;margin-bottom:14px;}
+.empty-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.empty-sub{font-size:14px;color:var(--gray);margin-bottom:24px;}
+.empty-btn{display:inline-block;padding:12px 28px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;font-size:14px;box-shadow:0 0 20px var(--blue-glow);}
 
 .reveal{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease,transform 0.6s ease;}
 .reveal.visible{opacity:1;transform:translateY(0);}
+.skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--card-h) 50%,var(--card) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-@media(max-width:768px){.nav-links{display:none!important;}.dash-profile{flex-direction:column;align-items:flex-start;}.dash-stats{margin-left:0;}.dash-stat{flex:1;}}
+@media(max-width:768px){.nav-links{display:none!important;}.dash-profile{flex-direction:column;align-items:flex-start;}.dash-stats{margin-left:0;width:100%;}.nav-username{display:none;}}
 @media(max-width:500px){body,*,a,button{cursor:auto!important;}#cursor-dot,#cursor-ring{display:none!important;}}
 </style>
 </head>
 <body>
-
 <div id="cursor-dot"></div>
-<div id="cursor-ring">
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <circle cx="22" cy="22" r="18" stroke="#6390ff" stroke-width="1" opacity="0.6"/>
-    <line x1="22" y1="0" x2="22" y2="8" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-    <line x1="22" y1="36" x2="22" y2="44" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-    <line x1="36" y1="22" x2="44" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-  </svg>
-</div>
+<div id="cursor-ring"><svg width="44" height="44" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="18" stroke="#6390ff" stroke-width="1" opacity="0.6"/><line x1="22" y1="0" x2="22" y2="8" stroke="#6390ff" stroke-width="1" opacity="0.4"/><line x1="22" y1="36" x2="22" y2="44" stroke="#6390ff" stroke-width="1" opacity="0.4"/><line x1="36" y1="22" x2="44" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/></svg></div>
 
-<!-- Loading screen -->
 <div class="page-loading" id="page-loading">
   <div class="page-loading-spinner"></div>
-  <div class="page-loading-text">Loading your dashboard...</div>
+  <div class="page-loading-text" id="loading-text">Signing you in with Discord...</div>
 </div>
 
-<!-- Nav -->
 <nav class="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
@@ -140,38 +133,35 @@ a,button{cursor:none;text-decoration:none;}
       <a href="showcase.html" class="nav-link">Showcase</a>
       <a href="order.html" class="nav-link">New Order</a>
       <a href="dashboard.html" class="nav-link active">Dashboard</a>
+    </div>
+    <div class="nav-user" id="nav-user" style="display:none;">
+      <div class="nav-avatar"><img id="nav-avatar-img" src="" alt=""></div>
+      <span class="nav-username" id="nav-username"></span>
       <button class="nav-signout" onclick="signOut()">Sign Out</button>
     </div>
   </div>
 </nav>
 
-<!-- Dashboard content -->
 <div class="dash-wrap" id="dash-wrap">
-
-  <!-- Profile -->
   <div class="dash-profile reveal" id="dash-profile">
-    <div class="dash-avatar" id="dash-avatar">?</div>
+    <div class="dash-avatar-wrap">
+      <div id="dash-avatar-el"></div>
+      <div class="discord-badge"><svg viewBox="0 0 24 24" fill="white"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg></div>
+    </div>
     <div class="dash-profile-info">
       <div class="dash-name" id="dash-name">Loading...</div>
-      <div class="dash-email" id="dash-email"></div>
+      <div class="dash-sub" id="dash-sub"></div>
       <div class="dash-badges">
-        <div class="dash-badge green">✓ Verified</div>
-        <div class="dash-badge">Exotic Utilities Customer</div>
+        <div class="dash-badge discord">Discord Verified</div>
+        <div class="dash-badge green">✓ Customer</div>
       </div>
     </div>
     <div class="dash-stats">
-      <div class="dash-stat">
-        <div class="dash-stat-val" id="stat-orders">0</div>
-        <div class="dash-stat-label">Orders</div>
-      </div>
-      <div class="dash-stat">
-        <div class="dash-stat-val" id="stat-bots">0</div>
-        <div class="dash-stat-label">Bots Built</div>
-      </div>
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-orders">0</div><div class="dash-stat-label">Orders</div></div>
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-delivered">0</div><div class="dash-stat-label">Delivered</div></div>
     </div>
   </div>
 
-  <!-- Quick Actions -->
   <div class="quick-actions reveal" style="transition-delay:0.1s">
     <a href="order.html" class="quick-action">
       <div class="quick-action-icon">🚀</div>
@@ -187,64 +177,109 @@ a,button{cursor:none;text-decoration:none;}
     </a>
   </div>
 
-  <!-- Orders -->
   <div class="dash-section reveal" style="transition-delay:0.18s">
-    <div class="dash-section-head">
-      <div class="dash-section-title">Your Orders</div>
-    </div>
+    <div class="dash-section-title">Your Orders</div>
     <div class="orders-list" id="orders-list">
-      <!-- Skeleton loader -->
-      <div style="height:120px;border-radius:16px;" class="skeleton"></div>
-      <div style="height:120px;border-radius:16px;" class="skeleton"></div>
+      <div style="height:110px;border-radius:16px;" class="skeleton"></div>
+      <div style="height:110px;border-radius:16px;opacity:0.6;" class="skeleton"></div>
     </div>
   </div>
-
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL  = "https://ietezcnrmnmkrgxlyauk.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const CLIENT_ID    = "1480018197334982749";
+const REDIRECT_URI = "https://martin54-hub2.github.io/Exotic-Utilities-/dashboard.html";
+const WEBHOOK_URL  = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
+
+let currentUser = null;
 
 async function init(){
-  const {data:{session}} = await sb.auth.getSession();
-  if(!session){
-    window.location.href="login.html";
+  // Check for OAuth token in URL fragment (#access_token=...)
+  const hash = new URLSearchParams(window.location.hash.slice(1));
+  const token = hash.get("access_token");
+
+  if(token){
+    // Fresh login — fetch Discord user info
+    document.getElementById("loading-text").textContent = "Getting your Discord profile...";
+    try{
+      const res = await fetch("https://discord.com/api/users/@me", {
+        headers:{ Authorization: "Bearer " + token }
+      });
+      const user = await res.json();
+      user._token = token;
+      user._loginTime = Date.now();
+      localStorage.setItem("eu_discord_user", JSON.stringify(user));
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Log to Discord webhook
+      notifyNewLogin(user);
+      showDashboard(user);
+    }catch(e){
+      redirectToLogin();
+    }
     return;
   }
 
-  const user = session.user;
-  const discord = user.user_metadata?.discord_username || "";
+  // Check stored session
+  try{
+    const stored = localStorage.getItem("eu_discord_user");
+    if(stored){
+      const user = JSON.parse(stored);
+      // Sessions last 7 days
+      if(user && user.id && Date.now() - user._loginTime < 7*24*60*60*1000){
+        showDashboard(user);
+        return;
+      }
+    }
+  }catch(e){}
 
-  // Fill profile
-  const initials = (discord||user.email).slice(0,2).toUpperCase();
-  document.getElementById("dash-avatar").textContent = initials;
-  document.getElementById("dash-name").textContent = discord ? `@${discord}` : user.email;
-  document.getElementById("dash-email").innerHTML = `📧 ${user.email}${discord?` &nbsp;·&nbsp; 💬 ${discord}`:""}`;
+  // Not logged in
+  redirectToLogin();
+}
 
-  // Load orders
-  const {data:orders, error} = await sb
-    .from("orders")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", {ascending:false});
+function redirectToLogin(){
+  window.location.href = "login.html";
+}
 
-  document.getElementById("page-loading").style.display="none";
+function showDashboard(user){
+  currentUser = user;
+  const avatarURL = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+    : `https://cdn.discordapp.com/embed/avatars/${(BigInt(user.id) >> 22n) % 6n}.png`;
+
+  // Nav
+  document.getElementById("nav-avatar-img").src = avatarURL;
+  document.getElementById("nav-username").textContent = user.global_name || user.username;
+  document.getElementById("nav-user").style.display = "flex";
+
+  // Profile card
+  document.getElementById("dash-avatar-el").innerHTML =
+    `<div class="dash-avatar"><img src="${avatarURL}" alt="${user.username}"></div>`;
+  document.getElementById("dash-name").textContent = user.global_name || user.username;
+  document.getElementById("dash-sub").textContent = `@${user.username}${user.discriminator && user.discriminator!=="0" ? "#"+user.discriminator : ""} · Discord ID: ${user.id}`;
+
+  document.getElementById("page-loading").style.display = "none";
   document.getElementById("dash-wrap").classList.add("show");
 
-  const delivered = (orders||[]).filter(o=>o.status==="delivered").length;
-  document.getElementById("stat-orders").textContent = (orders||[]).length;
-  document.getElementById("stat-bots").textContent = delivered;
-
-  renderOrders(orders||[]);
+  loadOrders(user);
   observeReveals();
+}
+
+function loadOrders(user){
+  // Load orders from localStorage (keyed by Discord ID)
+  const key = "eu_orders_" + user.id;
+  let orders = [];
+  try{ orders = JSON.parse(localStorage.getItem(key)) || []; }catch(e){}
+
+  document.getElementById("stat-orders").textContent = orders.length;
+  document.getElementById("stat-delivered").textContent = orders.filter(o=>o.status==="delivered").length;
+  renderOrders(orders);
 }
 
 function renderOrders(orders){
   const list = document.getElementById("orders-list");
   if(!orders.length){
-    list.innerHTML=`
+    list.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📦</div>
         <div class="empty-title">No orders yet</div>
@@ -253,61 +288,78 @@ function renderOrders(orders){
       </div>`;
     return;
   }
-
   list.innerHTML = orders.map(o=>{
     const date = new Date(o.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-    const cmds = Array.isArray(o.commands) ? o.commands : [];
-    const extras = Array.isArray(o.extras) ? o.extras : [];
-    const statusClass = o.status==="delivered"?"delivered":o.status==="building"?"building":"pending";
-    const statusLabel = o.status==="delivered"?"✓ Delivered":o.status==="building"?"⚙ Building":"⏳ Pending";
+    const cmds = Array.isArray(o.commands)?o.commands:[];
+    const sc = {pending:"pending",building:"building",delivered:"delivered"}[o.status]||"pending";
+    const sl = {pending:"⏳ Pending",building:"⚙ Building",delivered:"✓ Delivered"}[o.status]||"⏳ Pending";
     return `
       <div class="order-card">
         <div class="order-card-top">
           <span class="order-card-id">${o.order_id||"—"}</span>
           <span class="order-card-pkg">${o.package||"—"}</span>
-          <span class="order-status ${statusClass}">${statusLabel}</span>
+          <span class="order-status ${sc}">${sl}</span>
           <span class="order-card-date">${date}</span>
         </div>
         <div class="order-card-body">
-          <div class="order-field"><div class="order-field-label">Bot Name</div><div class="order-field-val">${o.bot_name||"—"}</div></div>
-          <div class="order-field"><div class="order-field-label">Server</div><div class="order-field-val">${o.server_name||"—"}</div></div>
-          <div class="order-field"><div class="order-field-label">Payment</div><div class="order-field-val">${o.payment||"—"}</div></div>
-          <div class="order-field"><div class="order-field-label">Timeline</div><div class="order-field-val">${o.timeline||"—"}</div></div>
-          <div class="order-field"><div class="order-field-label">Commands</div><div class="order-field-val">${cmds.length} selected</div></div>
-          ${extras.length?`<div class="order-field"><div class="order-field-label">Add-Ons</div><div class="order-field-val">${extras.join(", ")}</div></div>`:""}
+          <div><div class="order-field-label">Bot Name</div><div class="order-field-val">${o.bot_name||"—"}</div></div>
+          <div><div class="order-field-label">Server</div><div class="order-field-val">${o.server_name||"—"}</div></div>
+          <div><div class="order-field-label">Payment</div><div class="order-field-val">${o.payment||"—"}</div></div>
+          <div><div class="order-field-label">Timeline</div><div class="order-field-val">${o.timeline||"—"}</div></div>
         </div>
-        ${cmds.length?`<div class="order-card-cmds">${cmds.slice(0,12).map(c=>`<span class="order-cmd-chip">${c}</span>`).join("")}${cmds.length>12?`<span class="order-cmd-chip">+${cmds.length-12}</span>`:""}</div>`:""}
+        ${cmds.length?`<div class="order-card-cmds">${cmds.slice(0,10).map(c=>`<span class="order-cmd-chip">${c}</span>`).join("")}${cmds.length>10?`<span class="order-cmd-chip">+${cmds.length-10}</span>`:""}</div>`:""}
       </div>`;
   }).join("");
 }
 
+async function notifyNewLogin(user){
+  const avatarURL = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+    : null;
+  try{
+    await fetch(WEBHOOK_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        username:"Exotic Utilities",
+        embeds:[{
+          title:"👋 New Login",
+          color:0x5865f2,
+          fields:[
+            {name:"Username",value:user.global_name||user.username,inline:true},
+            {name:"Discord Tag",value:`@${user.username}`,inline:true},
+            {name:"Discord ID",value:user.id,inline:true},
+          ],
+          thumbnail: avatarURL ? {url:avatarURL} : undefined,
+          footer:{text:"Exotic Utilities Auth"},
+          timestamp:new Date().toISOString()
+        }]
+      })
+    });
+  }catch(e){}
+}
+
+function signOut(){
+  localStorage.removeItem("eu_discord_user");
+  window.location.href = "login.html";
+}
+
 function observeReveals(){
-  const obs=new IntersectionObserver(entries=>{
+  const obs = new IntersectionObserver(entries=>{
     entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add("visible");obs.unobserve(e.target);}});
   },{threshold:0.05});
   document.querySelectorAll(".reveal").forEach(el=>obs.observe(el));
 }
 
-async function signOut(){
-  await sb.auth.signOut();
-  window.location.href="login.html";
-}
-
 init();
 
-// Cursor
 (function(){
   const dot=document.getElementById("cursor-dot"),ring=document.getElementById("cursor-ring");
   let mx=-100,my=-100,dx=-100,dy=-100,rx=-100,ry=-100,hov=false;
   document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;});
   document.addEventListener("mouseover",e=>{if(e.target.closest("a,button,.order-card,.quick-action"))hov=true;});
   document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.order-card,.quick-action"))hov=false;});
-  function tick(){
-    dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;
-    dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;
-    const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;
-    ring.style.opacity=hov?"0.7":"0.4";requestAnimationFrame(tick);
-  }tick();
+  function tick(){dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;ring.style.opacity=hov?"0.7":"0.4";requestAnimationFrame(tick);}tick();
 })();
 </script>
 </body>
