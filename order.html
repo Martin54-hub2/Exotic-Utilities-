@@ -1421,67 +1421,59 @@ function signOut(){
 const JBIN_KEY  = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
 const JBIN_BASE = "https://api.jsonbin.io/v3";
 
-async function getBinId(){{
+async function getBinId(){
   let id = localStorage.getItem("eu_bin_id");
   if(id) return id;
-  try{{
-    const res = await fetch(JBIN_BASE+"/b",{{
+  try{
+    const res = await fetch(JBIN_BASE+"/b",{
       method:"POST",
-      headers:{{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"}},
-      body:JSON.stringify({{orders:[]}})
-    }});
+      headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
+      body:JSON.stringify({orders:[]})
+    });
     const data = await res.json();
     id = data.metadata && data.metadata.id;
-    if(id){{ localStorage.setItem("eu_bin_id", id); }}
-  }}catch(e){{ console.error("Bin create failed",e); }}
+    if(id){ localStorage.setItem("eu_bin_id", id); }
+  }catch(e){ console.error("Bin create failed",e); }
   return id;
-}}
+}
 
-async function jbinRead(){{
-  try{{
+async function jbinRead(){
+  try{
     const id = await getBinId();
     if(!id) return [];
-    const res = await fetch(JBIN_BASE+"/b/"+id+"/latest",{{
-      headers:{{"X-Master-Key":JBIN_KEY}}
-    }});
+    const res = await fetch(JBIN_BASE+"/b/"+id+"/latest",{
+      headers:{"X-Master-Key":JBIN_KEY}
+    });
     const data = await res.json();
     return Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
-  }}catch(e){{ console.error("jbinRead failed",e); return []; }}
-}}
+  }catch(e){ console.error("jbinRead failed",e); return []; }
+}
 
-async function jbinWrite(orders){{
+async function jbinWrite(orders){
   const id = await getBinId();
   if(!id) throw new Error("No bin ID");
-  await fetch(JBIN_BASE+"/b/"+id,{{
+  await fetch(JBIN_BASE+"/b/"+id,{
     method:"PUT",
-    headers:{{"Content-Type":"application/json","X-Master-Key":JBIN_KEY}},
-    body:JSON.stringify({{orders}})
-  }});
-}}
+    headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY},
+    body:JSON.stringify({orders})
+  });
+}
 
-async function jbinAddOrder(order){{
-  // Strip base64 images to save space — webhooks already have them
-  const lean = Object.assign({{}}, order);
-  if(lean.logo && lean.logo.dataUrl){{ lean.logo = {{name:lean.logo.name, type:lean.logo.type}}; }}
-  if(lean.banner && lean.banner.dataUrl){{ lean.banner = {{name:lean.banner.name, type:lean.banner.type}}; }}
+async function jbinAddOrder(order){
+  const lean = Object.assign({}, order);
+  if(lean.logo && lean.logo.dataUrl){ lean.logo = {name:lean.logo.name, type:lean.logo.type}; }
+  if(lean.banner && lean.banner.dataUrl){ lean.banner = {name:lean.banner.name, type:lean.banner.type}; }
   const orders = await jbinRead();
   orders.unshift(lean);
   await jbinWrite(orders);
-}}
+}
 
-async function jbinUpdateOrder(orderId, patch){{
+async function jbinDeleteOrder(orderId){
   const orders = await jbinRead();
-  const idx = orders.findIndex(function(o){{ return o.order_id===orderId; }});
-  if(idx>=0){{ orders[idx]=Object.assign({{}},orders[idx],patch); await jbinWrite(orders); }}
-  return orders;
-}}
-
-async function jbinDeleteOrder(orderId){{
-  const orders = await jbinRead();
-  const filtered = orders.filter(function(o){{ return o.order_id!==orderId; }});
+  const filtered = orders.filter(function(o){ return o.order_id !== orderId; });
   await jbinWrite(filtered);
   return filtered;
-}}
+}
 
 async function saveOrderLocally(orderData){
   if(!window._currentUser) return;
