@@ -554,8 +554,8 @@ img { max-width: 100%; }
       <a href="#reviews" class="nav-link">Reviews</a>
       <a href="showcase.html" class="nav-link">Showcase</a>
       <a href="#faq" class="nav-link">FAQ</a>
-      <a href="login.html" class="nav-link">Sign In</a>
-      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="login.html" class="nav-link" id="nav-signin">Sign In</a>
+      <a href="dashboard.html" class="nav-link" id="nav-dashboard" style="display:none">Dashboard</a>
       <a href="order.html" class="nav-cta">Order Now ↗</a>
     </div>
   </div>
@@ -652,6 +652,7 @@ img { max-width: 100%; }
   <div class="footer-links">
     <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Discord</a>
     <a href="showcase.html">Showcase</a>
+    <a href="dashboard.html">Dashboard</a>
     <a href="login.html">Sign In</a>
     <a href="signup.html">Sign Up</a>
     <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact</a>
@@ -661,6 +662,21 @@ img { max-width: 100%; }
 <script>
 /* ── Data ─────────────────────────────────────── */
 const DISCORD = "https://discord.gg/tfvNFNmHMY";
+
+// Smart nav: show Dashboard if logged in, Sign In if not
+(function(){
+  const s=document.createElement("script");
+  s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  s.onload=async function(){
+    const sb=supabase.createClient("https://ietezcnrmnmkrgxlyauk.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM");
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){
+      document.getElementById("nav-signin").style.display="none";
+      document.getElementById("nav-dashboard").style.display="";
+    }
+  };
+  document.head.appendChild(s);
+})();
 
 const FEATURES = [
   { icon:"🛡️", title:"Moderation System", desc:"Ban, kick, timeout, warn, purge, and slowmode — fully configured with clean logging and embeds.", cat:"core" },
