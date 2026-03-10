@@ -225,7 +225,26 @@ img{max-width:100%;}
 .footer-links a{font-size:13px;color:var(--gray);text-decoration:none;transition:color 0.2s;}
 .footer-links a:hover{color:var(--blue);}
 
-@media(max-width:1024px){.builder-wrap{grid-template-columns:1fr;}.preview-panel{position:static;}}
+/* ── Auth Gate ───────────────────────────── */
+.auth-gate{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;}
+.auth-gate-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:44px 40px;text-align:center;animation:gateIn 0.5s cubic-bezier(0.16,1,0.3,1);}
+@keyframes gateIn{from{opacity:0;transform:translateY(30px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.auth-gate-icon{font-size:48px;margin-bottom:20px;}
+.auth-gate-title{font-size:26px;font-weight:800;margin-bottom:10px;}
+.auth-gate-sub{font-size:15px;color:var(--gray-lt);margin-bottom:32px;line-height:1.6;}
+.auth-gate-btns{display:flex;flex-direction:column;gap:11px;}
+.auth-gate-primary{padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer;box-shadow:0 0 28px var(--blue-glow);font-family:'Outfit';text-decoration:none;display:block;}
+.auth-gate-primary:hover{transform:translateY(-1px);}
+.auth-gate-secondary{padding:13px;border-radius:12px;background:rgba(255,255,255,0.03);color:var(--white);font-weight:600;font-size:14px;border:1px solid var(--border);text-decoration:none;display:block;transition:border-color 0.2s;}
+.auth-gate-secondary:hover{border-color:var(--border-h);}
+.auth-gate-note{font-size:12px;color:var(--gray);margin-top:18px;}
+.auth-user-bar{background:rgba(99,144,255,0.06);border-bottom:1px solid rgba(99,144,255,0.1);padding:10px 28px;display:none;align-items:center;justify-content:space-between;gap:12px;position:fixed;top:72px;left:0;right:0;z-index:100;}
+.auth-user-bar.show{display:flex;}
+.auth-user-bar-left{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--gray-lt);}
+.auth-user-bar-left strong{color:var(--white);}
+.auth-signout{padding:6px 14px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--gray-lt);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit';transition:all 0.2s;}
+.auth-signout:hover{border-color:var(--border-h);color:var(--white);}
+
 @media(max-width:768px){.nav-links{display:none!important;}.form-row{grid-template-columns:1fr;}.pkg-grid{grid-template-columns:1fr;}.steps-nav{flex-wrap:wrap;height:auto;padding:8px;gap:4px;}.step-pill{flex:unset;padding:8px 14px;font-size:12px;}}
 @media(max-width:500px){body,*,a,button{cursor:auto!important;}#cursor-dot,#cursor-ring{display:none!important;}}
 </style>
@@ -243,7 +262,28 @@ img{max-width:100%;}
   </svg>
 </div>
 
-<nav class="nav">
+<!-- Auth Gate (shown if not logged in) -->
+<div class="auth-gate" id="auth-gate" style="display:none;">
+  <div class="auth-gate-card">
+    <div class="auth-gate-icon">🔐</div>
+    <div class="auth-gate-title">Sign in to Order</div>
+    <div class="auth-gate-sub">You need an account to place a bot order. It's free and takes 30 seconds to set up.</div>
+    <div class="auth-gate-btns">
+      <a href="signup.html" class="auth-gate-primary">Create Free Account →</a>
+      <a href="login.html" class="auth-gate-secondary">Sign In</a>
+    </div>
+    <div class="auth-gate-note">Already have an account? <a href="login.html" style="color:var(--blue);text-decoration:none;">Sign in here</a></div>
+  </div>
+</div>
+
+<!-- Logged-in user bar -->
+<div class="auth-user-bar" id="auth-user-bar">
+  <div class="auth-user-bar-left">
+    <span>👤</span>
+    <span>Signed in as <strong id="auth-user-email"></strong></span>
+  </div>
+  <button class="auth-signout" onclick="signOut()">Sign Out</button>
+</div>
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
       <div class="nav-logo-icon"><img src="logo.png" alt="EU"></div>
@@ -1036,6 +1076,44 @@ function observeReveals(){
     requestAnimationFrame(tick);
   }tick();
 })();
+
+/* ═══════════════════════════
+   AUTH — Require login to order
+═══════════════════════════ */
+const SUPABASE_URL  = "https://ietezconrmnmkrgxlyauk.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldGV6Y25ybW5ta3JneGx5YXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDQ1NjksImV4cCI6MjA4ODY4MDU2OX0.4enYveAnns7gyZqZAFjQB9FJFfhvLEtmQLPJvP2hwiM";
+
+// Load Supabase then check auth
+(function loadSupabase(){
+  const s=document.createElement("script");
+  s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  s.onload=function(){
+    const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+    sb.auth.getSession().then(({data:{session}})=>{
+      if(!session){
+        // Not logged in — show gate, hide builder
+        document.getElementById("auth-gate").style.display="flex";
+        document.querySelector(".page-hero").style.display="none";
+        document.querySelector(".builder-wrap").style.display="none";
+        document.querySelector(".footer").style.display="none";
+      } else {
+        // Logged in — show user bar with their email
+        const bar=document.getElementById("auth-user-bar");
+        document.getElementById("auth-user-email").textContent=session.user.email;
+        bar.classList.add("show");
+        // Push content down to account for user bar
+        document.querySelector(".page-hero").style.paddingTop="170px";
+      }
+    });
+    window._sb=sb;
+  };
+  document.head.appendChild(s);
+})();
+
+async function signOut(){
+  if(window._sb) await window._sb.auth.signOut();
+  window.location.href="login.html";
+}
 
 init();
 </script>
