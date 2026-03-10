@@ -651,6 +651,10 @@ img{max-width:100%;}
 
 <script>
 
+
+
+
+
 /* ═══════════════════════════════════════
    CONSTANTS & CONFIG
 ═══════════════════════════════════════ */
@@ -721,17 +725,40 @@ const state = {
    JSONBIN HELPERS
 ═══════════════════════════════════════ */
 async function getBinId() {
+  // 1. Fast path: cached locally
   let id = localStorage.getItem("eu_bin_id");
   if (id) return id;
+
+  // 2. Search for existing bin by name
+  try {
+    const searchRes = await fetch(JBIN_BASE + "/b/search?query=eu-orders", {
+      headers: { "X-Master-Key": JBIN_KEY }
+    });
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      const bins = searchData.items || searchData.result || searchData.records || [];
+      const match = bins.find && bins.find(b =>
+        (b.name && b.name === "eu-orders") ||
+        (b.snippet && b.snippet.includes("eu-orders")) ||
+        (b.metadata && b.metadata.name === "eu-orders")
+      );
+      if (match) {
+        id = (match.id || (match.metadata && match.metadata.id));
+        if (id) { localStorage.setItem("eu_bin_id", id); return id; }
+      }
+    }
+  } catch(e) { /* search not available */ }
+
+  // 3. Create new bin only if truly none exists (first ever use)
   try {
     const res = await fetch(JBIN_BASE + "/b", {
       method: "POST",
-      headers: {"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
-      body: JSON.stringify({orders:[]})
+      headers: { "Content-Type": "application/json", "X-Master-Key": JBIN_KEY, "X-Bin-Name": "eu-orders", "X-Private": "false" },
+      body: JSON.stringify({ orders: [] })
     });
     const data = await res.json();
     id = data.metadata && data.metadata.id;
-    if (id) localStorage.setItem("eu_bin_id", id);
+    if (id) { localStorage.setItem("eu_bin_id", id); }
   } catch(e) { console.error("Bin create failed", e); }
   return id;
 }
@@ -828,9 +855,35 @@ function goStep(n) {
     const num = document.getElementById("pn" + ps);
     if (num) num.textContent = ps < n ? "✓" : ps;
   });
+  if (n === 4) updateOrderSummary();
   const hero = document.querySelector(".page-hero");
   if (hero) window.scrollTo({top: hero.offsetTop - 80, behavior:"smooth"});
   setTimeout(() => observeReveals(), 120);
+}
+
+function updateOrderSummary() {
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  const el_pkg  = document.getElementById("sum-package");
+  const el_cmds = document.getElementById("sum-cmds");
+  const el_ext  = document.getElementById("sum-extras");
+  const el_time = document.getElementById("sum-timeline");
+  const el_price= document.getElementById("sum-price");
+  if (el_pkg)  el_pkg.textContent  = pkg ? pkg.name : "Not selected";
+  if (el_cmds) el_cmds.textContent = state.selectedCmds.size + " selected";
+  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id===id)?.name).filter(Boolean);
+  if (el_ext)  el_ext.textContent  = extrasArr.length ? extrasArr.join(", ") : "None";
+  const timeline = (document.getElementById("timeline") || {}).value || "—";
+  if (el_time) el_time.textContent = timeline;
+  if (el_price) {
+    let price = pkg ? pkg.price : "—";
+    const addonTotal = extrasArr.reduce((s,_,i) => {
+      const ex = Array.from(state.selectedExtras)[i];
+      const e = EXTRAS.find(x=>x.id===ex);
+      return s + (e ? parseInt(e.badge.replace(/[^0-9]/g,""))||0 : 0);
+    }, 0);
+    if (addonTotal > 0) price += " + $" + addonTotal;
+    el_price.textContent = price;
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -935,7 +988,7 @@ function toggleCmd(name) {
    EXTRAS
 ═══════════════════════════════════════ */
 function renderExtras() {
-  document.getElementById("extras-grid").innerHTML = EXTRAS.map(ex => `
+  document.getElementById("extra-list").innerHTML = EXTRAS.map(ex => `
     <div class="extra-card${state.selectedExtras.has(ex.id)?" selected":""}" onclick="toggleExtra('${ex.id}')">
       <div class="extra-top">
         <div class="extra-name">${ex.name}</div>
@@ -973,8 +1026,14 @@ function calcPrice() {
   const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id === id)).filter(Boolean);
   const addonTotal = extrasArr.reduce((sum, e) => sum + (parseInt(e.badge.replace(/[^0-9]/g,"")) || 0), 0);
   if (addonTotal > 0) price += " + $" + addonTotal + " add-ons";
-  const priceEl = document.getElementById("price-display");
+  const priceEl = document.getElementById("sum-price");
   if (priceEl) priceEl.textContent = price;
+  // Also update extras summary
+  const extrasEl = document.getElementById("sum-extras");
+  if (extrasEl) {
+    const names = Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
+    extrasEl.textContent = names.length ? names.join(", ") : "None";
+  }
 }
 
 /* ═══════════════════════════════════════
@@ -1063,7 +1122,7 @@ function getCooldownRemaining() {
    SUBMIT ORDER
 ═══════════════════════════════════════ */
 async function submitOrder() {
-  const btn = document.getElementById("place-order-btn");
+  const btn = document.getElementById("submit-btn");
   if (!btn) return;
 
   const cooldown = getCooldownRemaining();
@@ -1073,15 +1132,18 @@ async function submitOrder() {
   }
 
   // Gather form values
-  const discord  = (document.getElementById("order-discord")  || {}).value || "";
-  const serverId = (document.getElementById("order-server")   || {}).value || "";
-  const payment  = (document.getElementById("order-payment")  || {}).value || "";
-  const timeline = (document.getElementById("order-timeline") || {}).value || "";
-  const notes    = (document.getElementById("order-notes")    || {}).value || "";
-  const botName  = (document.getElementById("bot-name")       || {}).value || "Unnamed";
-  const botStatus= (document.getElementById("bot-status")     || {}).value || "";
-  const serverName=(document.getElementById("server-name")    || {}).value || "";
-  const footer   = (document.getElementById("embed-footer")   || {}).value || "";
+  const discord   = (document.getElementById("disc-username")  || {}).value || "";
+  const discId    = (document.getElementById("disc-id")        || {}).value || "";
+  const serverId  = (document.getElementById("server-invite")  || {}).value || "";
+  const payment   = (document.getElementById("payment-method") || {}).value || "";
+  const timeline  = (document.getElementById("timeline")       || {}).value || "";
+  const notes     = (document.getElementById("order-notes")    || {}).value || "";
+  const extraNotes= (document.getElementById("extra-notes")    || {}).value || "";
+  const allNotes  = [notes, extraNotes].filter(Boolean).join("\n") || "None";
+  const botName   = (document.getElementById("bot-name")       || {}).value || "Unnamed";
+  const botStatus = (document.getElementById("bot-status")     || {}).value || "";
+  const serverName= (document.getElementById("server-name")    || {}).value || "";
+  const footer    = (document.getElementById("embed-footer")   || {}).value || "";
 
   if (!discord || !payment) { alert("Please fill in Discord username and payment method."); return; }
 
@@ -1136,14 +1198,14 @@ async function submitOrder() {
       fields: [
         {name:"📋 Order ID",     value:"`"+orderID+"`",                    inline:true},
         {name:"📦 Package",      value:pkg.icon+" "+pkg.name+" — "+pkg.price, inline:true},
-        {name:"👤 Customer",     value:"Username: "+discord,              inline:false},
+        {name:"👤 Customer",     value:"Username: "+discord+"\nUser ID: "+discId, inline:false},
         {name:"🤖 Bot Details",  value:"Name: "+botName+"\nStatus: "+botStatus+"\nServer: "+serverName+"\nFooter: "+footer+"\nColor: "+state.color, inline:false},
         {name:"📦 Assets",       value:"Logo: "+(state.logoFile?"✅ "+state.logoFile.name:"❌ Not uploaded")+"\nBanner: "+(state.bannerFile?"✅ "+state.bannerFile.name:"❌ Not uploaded"), inline:false},
         {name:"⚡ Commands ("+cmdsArr.length+")", value: cmdsArr.length ? cmdsArr.join(", ") : "None selected", inline:false},
         {name:"🎮 Add-Ons",      value: extrasArr.length ? extrasArr.join(", ") : "None", inline:true},
         {name:"💳 Payment",      value: payment,   inline:true},
         {name:"⏱ Timeline",     value: timeline || "—", inline:true},
-        {name:"📝 Notes",        value: notes || "(none)", inline:false}
+        {name:"📝 Notes",        value: allNotes, inline:false}
       ],
       footer: {text:"Exotic Utilities Order System • Config .txt attached"},
       timestamp: new Date().toISOString()
@@ -1458,6 +1520,10 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+
+
+
 
 </script>
 </body>

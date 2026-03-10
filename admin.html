@@ -308,6 +308,7 @@ input,textarea{cursor:text;}
 <div class="toast" id="toast"></div>
 
 <script>
+
 /* ════════════════════════════════
    CONFIG — Change your PIN here!
 ════════════════════════════════ */
@@ -346,19 +347,42 @@ function checkPin(){
 const JBIN_KEY  = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
 const JBIN_BASE = "https://api.jsonbin.io/v3";
 
-async function getBinId(){
+async function getBinId() {
+  // 1. Fast path: cached locally
   let id = localStorage.getItem("eu_bin_id");
-  if(id) return id;
-  try{
-    const res = await fetch(JBIN_BASE+"/b",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
-      body:JSON.stringify({orders:[]})
+  if (id) return id;
+
+  // 2. Search for existing bin by name
+  try {
+    const searchRes = await fetch(JBIN_BASE + "/b/search?query=eu-orders", {
+      headers: { "X-Master-Key": JBIN_KEY }
+    });
+    if (searchRes.ok) {
+      const searchData = await searchRes.json();
+      const bins = searchData.items || searchData.result || searchData.records || [];
+      const match = bins.find && bins.find(b =>
+        (b.name && b.name === "eu-orders") ||
+        (b.snippet && b.snippet.includes("eu-orders")) ||
+        (b.metadata && b.metadata.name === "eu-orders")
+      );
+      if (match) {
+        id = (match.id || (match.metadata && match.metadata.id));
+        if (id) { localStorage.setItem("eu_bin_id", id); return id; }
+      }
+    }
+  } catch(e) { /* search not available */ }
+
+  // 3. Create new bin only if truly none exists (first ever use)
+  try {
+    const res = await fetch(JBIN_BASE + "/b", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Master-Key": JBIN_KEY, "X-Bin-Name": "eu-orders", "X-Private": "false" },
+      body: JSON.stringify({ orders: [] })
     });
     const data = await res.json();
     id = data.metadata && data.metadata.id;
-    if(id){ localStorage.setItem("eu_bin_id", id); }
-  }catch(e){ console.error("Bin create failed",e); }
+    if (id) { localStorage.setItem("eu_bin_id", id); }
+  } catch(e) { console.error("Bin create failed", e); }
   return id;
 }
 
@@ -777,6 +801,7 @@ document.addEventListener("DOMContentLoaded", function(){
   }
   tick();
 })();
+
 </script>
 </body>
 </html>
