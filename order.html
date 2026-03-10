@@ -604,33 +604,17 @@ img{max-width:100%;}
 </footer>
 
 <script>
-/* ═══════════════════════════
-   CONFIG — Replace this with your real Discord webhook URL
-═══════════════════════════ */
-const WEBHOOK_URL = "https://discord.com/api/webhooks/1480715326663426058/Q8eWvzJpra9Fg4UBjC1QmC3xTIo9skm-ySQkO8wNrvctV8A_9xbL8GVRBZQ_sc7pjbNA";
 
-/* ═══════════════════════════
-   ANTI-SPAM — Rate limit: 1 order per 30 mins per browser
-═══════════════════════════ */
-const SPAM_KEY = "eu_last_order";
-const SPAM_WINDOW = 30 * 60 * 1000; // 30 minutes
-function canSubmitOrder(){
-  const last = localStorage.getItem(SPAM_KEY);
-  if(!last) return true;
-  return Date.now() - parseInt(last) > SPAM_WINDOW;
-}
-function markOrderSent(){
-  localStorage.setItem(SPAM_KEY, Date.now().toString());
-}
-function getCooldownRemaining(){
-  const last = localStorage.getItem(SPAM_KEY);
-  if(!last) return 0;
-  return Math.max(0, SPAM_WINDOW - (Date.now() - parseInt(last)));
-}
+/* ═══════════════════════════════════════
+   CONSTANTS & CONFIG
+═══════════════════════════════════════ */
+const ORDER_WEBHOOK  = "https://discord.com/api/webhooks/1480715326663426058/Q8eWvzJpra9Fg4UBjC1QmC3xTIo9skm-ySQkO8wNrvctV8A_9xbL8GVRBZQ_sc7pjbNA";
+const REVIEW_WEBHOOK = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
+const JBIN_KEY       = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
+const JBIN_BASE      = "https://api.jsonbin.io/v3";
+const SPAM_KEY       = "eu_last_order";
+const SPAM_WINDOW    = 30 * 60 * 1000;
 
-/* ═══════════════════════════
-   DATA
-═══════════════════════════ */
 const ALL_COMMANDS = [
   {name:"/ban",cat:"moderation"},{name:"/unban",cat:"moderation"},{name:"/kick",cat:"moderation"},
   {name:"/mute",cat:"moderation"},{name:"/unmute",cat:"moderation"},{name:"/timeout",cat:"moderation"},
@@ -653,7 +637,8 @@ const ALL_COMMANDS = [
   {name:"/rank",cat:"xp"},{name:"/leaderboard",cat:"xp"},
   {name:"/announce",cat:"admin"},{name:"/dm",cat:"admin"},{name:"/roleall",cat:"admin"},{name:"/config",cat:"admin"},
   {name:"/players",cat:"erlc"},{name:"/server",cat:"erlc"},
-];
+]
+
 const CMD_CATS = ["all","moderation","infractions","sessions","staff","tickets","utility","xp","admin","erlc"];
 
 const EXTRAS = [
@@ -664,532 +649,545 @@ const EXTRAS = [
   {id:"vc",name:"VC Office System",desc:"Private VC offices for server boosters",badge:"+$3"},
   {id:"verify",name:"Verification System",desc:"Gate your server with auto role assignment",badge:"+$4"},
   {id:"logs",name:"Advanced Logging",desc:"Full audit log: joins, leaves, edits, deletes",badge:"+$3"},
-];
+]
 
 const PACKAGES = [
   {id:"basic",icon:"⚡",name:"Basic",price:"$5–$10",robux:"500–1K",desc:"Essential mod + sessions",popular:false},
   {id:"advanced",icon:"🔥",name:"Advanced",price:"$15–$25",robux:"1.5K–2.5K",desc:"Tickets + full systems",popular:true},
   {id:"elite",icon:"👑",name:"Elite",price:"$30–$50",robux:"3K–5K",desc:"Full custom everything",popular:false},
-];
+]
 
-/* ═══════════════════════════
+/* ═══════════════════════════════════════
    STATE
-═══════════════════════════ */
+═══════════════════════════════════════ */
 const state = {
-  color:"#6390ff",logoUrl:null,bannerUrl:null,
-  logoFile:null,bannerFile:null,
-  selectedCmds:new Set(),selectedExtras:new Set(),
-  package:null,cmdCat:"all",
+  step: 1,
+  color: "#6390ff",
+  logoUrl: null, logoFile: null,
+  bannerUrl: null, bannerFile: null,
+  selectedCmds: new Set(),
+  selectedExtras: new Set(),
+  selectedPkg: null,
+  cmdCat: "all"
 };
 
-/* ═══════════════════════════
-   INIT
-═══════════════════════════ */
-function init(){
-  renderCmdCats();renderCmds();renderExtras();renderPackages();
-  buildDiscordEmbed();updatePreview();observeReveals();
-}
-
-/* ═══════════════════════════
-   STEP NAV
-═══════════════════════════ */
-function goStep(n){
-  document.querySelectorAll(".step-panel").forEach(p=>p.classList.remove("active"));
-  const panel=document.getElementById("step-"+n);
-  if(panel)panel.classList.add("active");
-  document.querySelectorAll(".step-pill").forEach(pill=>{
-    const ps=parseInt(pill.dataset.step);
-    pill.classList.remove("active","done");
-    if(ps===n)pill.classList.add("active");
-    else if(ps<n)pill.classList.add("done");
-    const num=document.getElementById("pn"+ps);
-    if(num)num.textContent=ps<n?"✓":ps;
-  });
-  window.scrollTo({top:document.querySelector(".page-hero").offsetTop-80,behavior:"smooth"});
-  setTimeout(()=>observeReveals(),120);
-}
-
-/* ═══════════════════════════
-   COLOR
-═══════════════════════════ */
-function pickColor(el){
-  document.querySelectorAll(".color-swatch").forEach(s=>s.classList.remove("selected"));
-  el.classList.add("selected");
-  state.color=el.dataset.color;
-  document.getElementById("custom-color").value=state.color;
-  document.getElementById("custom-color-hex").textContent=state.color;
-  updatePreview();
-}
-function pickCustomColor(inp){
-  document.querySelectorAll(".color-swatch").forEach(s=>s.classList.remove("selected"));
-  state.color=inp.value;
-  document.getElementById("custom-color-hex").textContent=state.color;
-  updatePreview();
-}
-
-/* ═══════════════════════════
-   UPLOADS
-═══════════════════════════ */
-function readFileAsBase64(file){
-  return new Promise((res,rej)=>{
-    const r=new FileReader();
-    r.onload=e=>res(e.target.result); // full data URL: "data:image/png;base64,..."
-    r.onerror=rej;
-    r.readAsDataURL(file);
-  });
-}
-async function handleLogoUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  if(file.size>5*1024*1024){alert("Logo must be under 5MB.");return;}
-  const dataUrl=await readFileAsBase64(file);
-  state.logoUrl=dataUrl;
-  state.logoFile={name:file.name,type:file.type,dataUrl};
-  document.getElementById("logo-upload-default").style.display="none";
-  const prev=document.getElementById("logo-preview");prev.classList.add("show");
-  document.getElementById("logo-preview-img").src=dataUrl;
-  document.getElementById("logo-preview-name").textContent=file.name.length>20?file.name.slice(0,18)+"…":file.name;
-  document.getElementById("logo-upload-area").classList.add("has-file");
-  updatePreview();
-}
-function removeLogo(e){
-  e.preventDefault();e.stopPropagation();state.logoUrl=null;state.logoFile=null;
-  document.getElementById("logo-upload-default").style.display="";
-  document.getElementById("logo-preview").classList.remove("show");
-  document.getElementById("logo-upload-area").classList.remove("has-file");
-  document.getElementById("logo-file-input").value="";updatePreview();
-}
-async function handleBannerUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  if(file.size>8*1024*1024){alert("Banner must be under 8MB.");return;}
-  const dataUrl=await readFileAsBase64(file);
-  state.bannerUrl=dataUrl;
-  state.bannerFile={name:file.name,type:file.type,dataUrl};
-  document.getElementById("banner-upload-default").style.display="none";
-  const prev=document.getElementById("banner-preview");prev.classList.add("show");
-  document.getElementById("banner-preview-img").src=dataUrl;
-  document.getElementById("banner-preview-name").textContent=file.name.length>20?file.name.slice(0,18)+"…":file.name;
-  document.getElementById("banner-upload-area").classList.add("has-file");
-  updatePreview();
-}
-function removeBanner(e){
-  e.preventDefault();e.stopPropagation();state.bannerUrl=null;state.bannerFile=null;
-  document.getElementById("banner-upload-default").style.display="";
-  document.getElementById("banner-preview").classList.remove("show");
-  document.getElementById("banner-upload-area").classList.remove("has-file");
-  document.getElementById("banner-file-input").value="";updatePreview();
-}
-
-/* ═══════════════════════════
-   COMMANDS
-═══════════════════════════ */
-function renderCmdCats(){
-  document.getElementById("cmd-cats").innerHTML=CMD_CATS.map(c=>`<button class="cmd-cat-btn${c==="all"?" active":""}" onclick="setCmdCat('${c}')">${c}</button>`).join("");
-}
-function setCmdCat(cat){
-  state.cmdCat=cat;
-  document.querySelectorAll(".cmd-cat-btn").forEach(b=>b.classList.toggle("active",b.textContent===cat));
-  renderCmds();
-}
-function renderCmds(){
-  const list=state.cmdCat==="all"?ALL_COMMANDS:ALL_COMMANDS.filter(c=>c.cat===state.cmdCat);
-  document.getElementById("cmd-grid").innerHTML=list.map(c=>`<span class="cmd-chip${state.selectedCmds.has(c.name)?" selected":""}" onclick="toggleCmd('${c.name}')">${c.name}</span>`).join("");
-  document.getElementById("cmd-count").textContent=state.selectedCmds.size;
-}
-function toggleCmd(name){
-  state.selectedCmds.has(name)?state.selectedCmds.delete(name):state.selectedCmds.add(name);
-  renderCmds();updatePreview();
-}
-
-/* ═══════════════════════════
-   EXTRAS
-═══════════════════════════ */
-function renderExtras(){
-  document.getElementById("extra-list").innerHTML=EXTRAS.map(ex=>`
-    <div class="extra-item${state.selectedExtras.has(ex.id)?" selected":""}" onclick="toggleExtra('${ex.id}')">
-      <div class="extra-check">${state.selectedExtras.has(ex.id)?"✓":""}</div>
-      <div class="extra-info"><div class="extra-name">${ex.name}</div><div class="extra-desc">${ex.desc}</div></div>
-      <div class="extra-badge">${ex.badge}</div>
-    </div>`).join("");
-}
-function toggleExtra(id){
-  state.selectedExtras.has(id)?state.selectedExtras.delete(id):state.selectedExtras.add(id);
-  renderExtras();updatePreview();
-}
-
-/* ═══════════════════════════
-   PACKAGES
-═══════════════════════════ */
-function renderPackages(){
-  document.getElementById("pkg-grid").innerHTML=PACKAGES.map(p=>`
-    <div class="pkg-card${state.package===p.id?" selected":""}" onclick="selectPkg('${p.id}')">
-      ${p.popular?`<div class="pkg-card-pop">Popular</div>`:""}
-      <div class="pkg-icon">${p.icon}</div>
-      <div class="pkg-name">${p.name}</div>
-      <div class="pkg-price">${p.price}</div>
-      <div class="pkg-desc">${p.desc}</div>
-    </div>`).join("");
-}
-function selectPkg(id){state.package=id;renderPackages();updatePreview();}
-
-/* ═══════════════════════════
-   LIVE PREVIEW
-═══════════════════════════ */
-function updatePreview(){
-  const name=document.getElementById("bot-name")?.value||"";
-  const status=document.getElementById("bot-status")?.value||"";
-  const server=document.getElementById("server-name")?.value||"";
-  const footer=document.getElementById("embed-footer")?.value||"";
-
-  document.getElementById("prev-bot-name").textContent=name||"Your Bot";
-  document.getElementById("prev-bot-status").textContent=status||"No status set";
-  document.getElementById("prev-server-name").textContent=server||"Your Server";
-
-  // Logo
-  const logoImg=document.getElementById("prev-avatar-img");
-  const logoEmoji=document.getElementById("prev-avatar-emoji");
-  const sidebar=document.getElementById("prev-sidebar-icon");
-  if(state.logoUrl){
-    logoImg.src=state.logoUrl;logoImg.classList.add("show");logoEmoji.style.display="none";
-    sidebar.innerHTML=`<img src="${state.logoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-  } else {
-    logoImg.classList.remove("show");logoEmoji.style.display="";sidebar.innerHTML="🤖";
-  }
-
-  // Banner
-  const bannerImg=document.getElementById("prev-banner-img");
-  const bannerBg=document.getElementById("prev-banner-bg");
-  if(state.bannerUrl){bannerImg.src=state.bannerUrl;bannerImg.classList.add("show");bannerBg.style.background="transparent";}
-  else{bannerImg.classList.remove("show");bannerBg.style.background=`linear-gradient(135deg,${state.color}22,#818cf818)`;}
-
-  // Commands in profile
-  const cmdsArr=Array.from(state.selectedCmds).slice(0,9);
-  const prevCmds=document.getElementById("prev-cmds");
-  prevCmds.innerHTML=cmdsArr.map(c=>`<span class="bot-cmd-tag">${c}</span>`).join("");
-  if(state.selectedCmds.size>9)prevCmds.innerHTML+=`<span class="bot-cmd-tag">+${state.selectedCmds.size-9}</span>`;
-
-  buildDiscordEmbed(name||"Your Bot",footer||(name||"Your Bot")+" • Bot",state.color);
-
-  // Summary
-  const pkg=PACKAGES.find(p=>p.id===state.package);
-  document.getElementById("sum-package").textContent=pkg?`${pkg.icon} ${pkg.name}`:"Not selected";
-  document.getElementById("sum-cmds").textContent=`${state.selectedCmds.size} selected`;
-  const extraNames=Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
-  document.getElementById("sum-extras").textContent=extraNames.length?extraNames.slice(0,2).join(", ")+(extraNames.length>2?" +more":""):"None";
-  document.getElementById("sum-timeline").textContent=document.getElementById("timeline")?.value||"—";
-
-  // Live price estimate
-  let baseMin=0,baseMax=0;
-  if(pkg){
-    const ranges={basic:[5,10],advanced:[15,25],elite:[30,50]};
-    [baseMin,baseMax]=ranges[pkg.id]||[0,0];
-  }
-  // Add-on costs
-  const addonCosts={tickets:5,erlc:8,xp:3,boost:3,vc:3,verify:4,logs:3};
-  let addonTotal=0;
-  state.selectedExtras.forEach(id=>{addonTotal+=(addonCosts[id]||0);});
-  // Rush fee
-  const timelineVal=document.getElementById("timeline")?.value||"";
-  const rushFee=timelineVal.includes("Rush")?5:0;
-  if(baseMin>0||addonTotal>0){
-    const totalMin=baseMin+addonTotal+rushFee;
-    const totalMax=baseMax+addonTotal+rushFee;
-    document.getElementById("sum-price").textContent=`$${totalMin}–$${totalMax} USD`;
-  } else {
-    document.getElementById("sum-price").textContent="—";
-  }
-}
-
-function buildDiscordEmbed(botName="Your Bot",footer="Bot • Footer",color="#6390ff"){
-  const el=document.getElementById("prev-messages");
-  if(!el)return;
-  const avatarHtml=state.logoUrl?`<img src="${state.logoUrl}" alt="">`:`<span>🤖</span>`;
-  el.innerHTML=`
-    <div class="discord-msg">
-      <div class="discord-msg-avatar" style="background:${color}22;color:${color}">${avatarHtml}</div>
-      <div class="discord-msg-content">
-        <div class="discord-msg-header">
-          <span class="discord-msg-name" style="color:${color}">${botName}</span>
-          <span style="font-size:9px;background:${color}22;color:${color};padding:1px 5px;border-radius:3px;font-family:Outfit;font-weight:700">BOT</span>
-          <span class="discord-msg-time">Today at 12:00 PM</span>
-        </div>
-        <div class="discord-embed" style="border-left-color:${color}">
-          <div class="discord-embed-inner">
-            <div class="discord-embed-title" style="color:${color}">🛡️ Member Banned</div>
-            <div class="discord-embed-field"><div class="discord-embed-field-name">→ User</div><div class="discord-embed-field-value">badactor#0001</div></div>
-            <div class="discord-embed-field"><div class="discord-embed-field-name">→ Moderator</div><div class="discord-embed-field-value">Admin#1234</div></div>
-            <div class="discord-embed-field"><div class="discord-embed-field-name">→ Reason</div><div class="discord-embed-field-value">Rule violation</div></div>
-          </div>
-          <div class="discord-embed-footer">
-            <div style="width:13px;height:13px;border-radius:50%;overflow:hidden;display:inline-block;flex-shrink:0">
-              ${state.logoUrl?`<img src="${state.logoUrl}" style="width:100%;height:100%;object-fit:cover">`:`<div style="width:13px;height:13px;border-radius:50%;background:${color}33"></div>`}
-            </div>
-            &nbsp;${footer}
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ═══════════════════════════
-   SUBMIT ORDER
-═══════════════════════════ */
-async function submitOrder(){
-  const btn=document.getElementById("submit-btn");
-  const username=document.getElementById("disc-username").value.trim();
-  const userId=document.getElementById("disc-id").value.trim();
-  const pkg=PACKAGES.find(p=>p.id===state.package);
-
-  if(!username){alert("Please enter your Discord username.");return;}
-  if(!userId){alert("Please enter your Discord User ID.");return;}
-  if(!pkg){alert("Please select a package first.");goStep(3);return;}
-
-  // Anti-spam check
-  if(!canSubmitOrder()){
-    const mins=Math.ceil(getCooldownRemaining()/60000);
-    alert(`⏳ Slow down! You already placed an order recently.\nPlease wait ${mins} more minute${mins!==1?"s":""} before ordering again.`);
-    return;
-  }
-
-  btn.disabled=true;btn.textContent="Sending order...";
-
-  const orderID="EU-"+Math.random().toString(36).substring(2,8).toUpperCase();
-  const cmdsArr=Array.from(state.selectedCmds);
-  const extrasArr=Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
-  const botName=document.getElementById("bot-name").value||"—";
-  const botStatus=document.getElementById("bot-status").value||"—";
-  const serverName=document.getElementById("server-name").value||"—";
-  const embedFooter=document.getElementById("embed-footer").value||"—";
-  const serverInvite=document.getElementById("server-invite").value||"—";
-  const payment=document.getElementById("payment-method").value||"—";
-  const timeline=document.getElementById("timeline").value||"—";
-  const extraNotes=document.getElementById("extra-notes").value||"";
-  const orderNotes=document.getElementById("order-notes").value||"";
-  const allNotes=[extraNotes,orderNotes].filter(Boolean).join("\n\n")||"None";
-  const colorInt=parseInt(state.color.replace("#",""),16);
-
-  // ── Build .txt config file ──────────────────────────────────
-  const configLines=[
-    "╔══════════════════════════════════════════╗",
-    "   EXOTIC UTILITIES — BOT CONFIG FILE",
-    "   Order ID: "+orderID,
-    "   Generated: "+new Date().toLocaleString(),
-    "╚══════════════════════════════════════════╝",
-    "",
-    "━━━ CUSTOMER INFO ━━━━━━━━━━━━━━━━━━━━━━━━",
-    "Discord Username : "+username,
-    "Discord User ID  : "+userId,
-    "Server Invite    : "+serverInvite,
-    "",
-    "━━━ BOT IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━",
-    "Bot Name         : "+botName,
-    "Status Text      : "+botStatus,
-    "Server Name      : "+serverName,
-    "Embed Footer     : "+embedFooter,
-    "Embed Color      : "+state.color,
-    "Logo Uploaded    : "+(state.logoFile?"Yes — "+state.logoFile.name:"No"),
-    "Banner Uploaded  : "+(state.bannerFile?"Yes — "+state.bannerFile.name:"No"),
-    "",
-    "━━━ PACKAGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-    "Package          : "+pkg.name+" ("+pkg.price+")",
-    "",
-    "━━━ COMMANDS ("+cmdsArr.length+") ━━━━━━━━━━━━━━━━━━━━━━━━",
-    ...cmdsArr.map(c=>"  "+c),
-    "",
-    "━━━ ADD-ONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-    ...(extrasArr.length>0?extrasArr.map(e=>"  • "+e):["  None"]),
-    "",
-    "━━━ ORDER DETAILS ━━━━━━━━━━━━━━━━━━━━━━━",
-    "Payment Method   : "+payment,
-    "Timeline         : "+timeline,
-    "",
-    "━━━ NOTES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-    allNotes,
-    "",
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-    "Send this file to Claude AI with the prompt:",
-    '"Configure a Discord.js bot using this config file.',
-    'Set up all listed commands, use the embed color,',
-    'bot name, footer, and status text throughout."',
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-  ];
-  const configText=configLines.join("\n");
-  const configBlob=new Blob([configText],{type:"text/plain"});
-
-  // ── Build Discord embed payload ──────────────────────────────
-  const embedPayload={
-    username:"Exotic Utilities",
-    embeds:[{
-      title:"New Bot Order",
-      description:`> **Order ID:** \`${orderID}\`\n> **Package:** ${pkg.icon} ${pkg.name} — ${pkg.price}`,
-      color:colorInt,
-      fields:[
-        {
-          name:"👤  Customer",
-          value:`**Username:** ${username}\n**User ID:** \`${userId}\`\n**Server Invite:** ${serverInvite}`,
-          inline:false
-        },
-        {
-          name:"🤖  Bot Details",
-          value:`**Name:** ${botName}\n**Status:** ${botStatus}\n**Server:** ${serverName}\n**Footer:** ${embedFooter}\n**Color:** \`${state.color}\``,
-          inline:false
-        },
-        {
-          name:"🖼️  Assets",
-          value:`**Logo:** ${state.logoFile?"✅ "+state.logoFile.name:"❌ Not uploaded"}\n**Banner:** ${state.bannerFile?"✅ "+state.bannerFile.name:"❌ Not uploaded"}`,
-          inline:false
-        },
-        {
-          name:`⚡  Commands (${cmdsArr.length})`,
-          value:cmdsArr.length>0?cmdsArr.map(c=>`\`${c}\``).join(" "):"*None selected*",
-          inline:false
-        },
-        ...(extrasArr.length>0?[{
-          name:"➕  Add-Ons",
-          value:extrasArr.map(e=>`• ${e}`).join("\n"),
-          inline:false
-        }]:[]),
-        {name:"💳  Payment",value:payment,inline:true},
-        {name:"⏱️  Timeline",value:timeline,inline:true},
-        ...(allNotes&&allNotes!=="None"?[{
-          name:"📝  Notes",
-          value:allNotes.length>900?allNotes.slice(0,897)+"...":allNotes,
-          inline:false
-        }]:[]),
-      ],
-      footer:{text:"Exotic Utilities Order System • Config .txt attached"},
-      timestamp:new Date().toISOString(),
-    }]
-  };
-
-  // ── Send everything via multipart/form-data ──────────────────
-  try{
-    const form=new FormData();
-    // Main embed JSON
-    form.append("payload_json", JSON.stringify(embedPayload));
-    // Config .txt file
-    form.append("files[0]", configBlob, `EU-Config-${orderID}.txt`);
-    // Logo image (if uploaded) — convert base64 to blob
-    if(state.logoFile){
-      const logoBlob=dataURLtoBlob(state.logoFile.dataUrl);
-      form.append("files[1]", logoBlob, `logo-${state.logoFile.name}`);
-    }
-    // Banner image (if uploaded)
-    if(state.bannerFile){
-      const bannerBlob=dataURLtoBlob(state.bannerFile.dataUrl);
-      form.append("files[2]", bannerBlob, `banner-${state.bannerFile.name}`);
-    }
-
-    const res=await fetch(WEBHOOK_URL,{method:"POST",body:form});
-    if(!res.ok) throw new Error("Webhook returned "+res.status);
-    markOrderSent();
-
-    // Save to localStorage for dashboard
-    saveOrderLocally({
-      orderID, package:pkg.name, botName, serverName,
-      commands:cmdsArr, extras:extrasArr,
-      color:state.color, payment, timeline, notes:allNotes,
-      logoFile: state.logoFile || null,
-      bannerFile: state.bannerFile || null
+/* ═══════════════════════════════════════
+   JSONBIN HELPERS
+═══════════════════════════════════════ */
+async function getBinId() {
+  let id = localStorage.getItem("eu_bin_id");
+  if (id) return id;
+  try {
+    const res = await fetch(JBIN_BASE + "/b", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
+      body: JSON.stringify({orders:[]})
     });
-  }catch(err){
-    console.warn("Webhook send failed:",err);
-    btn.disabled=false;btn.textContent="🚀 Place Order";
-    alert("Something went wrong sending your order. Please try again or join our Discord.");
-    return;
-  }
-
-  // ── Show success ─────────────────────────────────────────────
-  document.getElementById("step-4").style.display="none";
-  document.getElementById("success-ticket").innerHTML=`
-    <div class="success-ticket-row"><span class="success-ticket-key">Order ID</span><span class="success-ticket-val">${orderID}</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Package</span><span class="success-ticket-val">${pkg.icon} ${pkg.name}</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Bot Name</span><span class="success-ticket-val">${botName}</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Commands</span><span class="success-ticket-val">${cmdsArr.length} selected</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Discord</span><span class="success-ticket-val">${username}</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Payment</span><span class="success-ticket-val">${payment}</span></div>
-    <div class="success-ticket-row"><span class="success-ticket-key">Config File</span><span class="success-ticket-val" style="color:var(--green)">✅ Sent to team</span></div>
-  `;
-  document.getElementById("success-panel").classList.add("show");
-  document.getElementById("steps-nav").style.opacity="0.4";
-  document.getElementById("steps-nav").style.pointerEvents="none";
-  window.scrollTo({top:0,behavior:"smooth"});
-  // Auto-prompt review after 4s
-  setTimeout(()=>openReview(), 4000);
+    const data = await res.json();
+    id = data.metadata && data.metadata.id;
+    if (id) localStorage.setItem("eu_bin_id", id);
+  } catch(e) { console.error("Bin create failed", e); }
+  return id;
 }
 
-/* Helper: convert base64 dataURL → Blob */
-function dataURLtoBlob(dataUrl){
-  const [header,data]=dataUrl.split(",");
-  const mime=header.match(/:(.*?);/)[1];
-  const binary=atob(data);
-  const arr=new Uint8Array(binary.length);
-  for(let i=0;i<binary.length;i++) arr[i]=binary.charCodeAt(i);
-  return new Blob([arr],{type:mime});
+async function jbinRead() {
+  try {
+    const id = await getBinId();
+    if (!id) return [];
+    const res = await fetch(JBIN_BASE + "/b/" + id + "/latest", {
+      headers: {"X-Master-Key": JBIN_KEY}
+    });
+    const data = await res.json();
+    return Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
+  } catch(e) { return []; }
 }
 
-/* ═══════════════════════════
-   REVEAL OBSERVER
-═══════════════════════════ */
-function observeReveals(){
-  const obs=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add("visible");obs.unobserve(e.target);}});
-  },{threshold:0.05});
-  document.querySelectorAll(".reveal:not(.visible)").forEach(el=>obs.observe(el));
+async function jbinWrite(orders) {
+  const id = await getBinId();
+  if (!id) return;
+  await fetch(JBIN_BASE + "/b/" + id, {
+    method: "PUT",
+    headers: {"Content-Type":"application/json","X-Master-Key":JBIN_KEY},
+    body: JSON.stringify({orders})
+  });
 }
 
-/* ═══════════════════════════
-   CURSOR
-═══════════════════════════ */
-(function(){
-  const dot=document.getElementById("cursor-dot"),ring=document.getElementById("cursor-ring");
-  let mx=-100,my=-100,dx=-100,dy=-100,rx=-100,ry=-100,hov=false;
-  document.addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY;});
-  document.addEventListener("mouseover",e=>{if(e.target.closest("a,button,.cmd-chip,.color-swatch,.pkg-card,.extra-item,.upload-area"))hov=true;});
-  document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.cmd-chip,.color-swatch,.pkg-card,.extra-item,.upload-area"))hov=false;});
-  function tick(){
-    dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;
-    dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;
-    const s=hov?1.8:1;
-    ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;
-    ring.style.opacity=hov?"0.7":"0.4";
-    requestAnimationFrame(tick);
-  }tick();
-})();
+async function jbinAddOrder(order) {
+  const lean = Object.assign({}, order);
+  if (lean.logo && lean.logo.dataUrl)   lean.logo   = {name: lean.logo.name,   type: lean.logo.type};
+  if (lean.banner && lean.banner.dataUrl) lean.banner = {name: lean.banner.name, type: lean.banner.type};
+  const orders = await jbinRead();
+  orders.unshift(lean);
+  await jbinWrite(orders);
+}
 
-/* ═══════════════════════════
-   AUTH — Discord OAuth check
-═══════════════════════════ */
-(function checkAuth(){
+/* ═══════════════════════════════════════
+   AUTH CHECK — runs on page load
+═══════════════════════════════════════ */
+function checkAuth() {
   const userStr = localStorage.getItem("eu_discord_user");
   const user = userStr ? JSON.parse(userStr) : null;
 
-  if(!user || !user.id){
-    // Not logged in — show gate
-    document.getElementById("auth-gate").style.display="flex";
+  if (!user || !user.id) {
+    document.getElementById("auth-gate").style.display = "flex";
     return;
   }
 
   // Logged in — show builder
-  document.getElementById("page-hero").style.display="";
-  document.getElementById("builder-wrap").style.display="";
-  document.querySelector(".footer").style.display="";
+  document.getElementById("page-hero").style.display = "";
+  document.getElementById("builder-wrap").style.display = "";
+  const footer = document.querySelector(".footer");
+  if (footer) footer.style.display = "";
 
-  // Show user bar with Discord avatar
+  // Show user bar
   const bar = document.getElementById("auth-user-bar");
   const displayName = user.global_name || user.username;
-  document.getElementById("auth-user-email").textContent = `@${user.username}`;
-  if(user.avatar){
+  const emailEl = document.getElementById("auth-user-email");
+  if (emailEl) emailEl.textContent = "@" + user.username;
+  if (user.avatar) {
     const avatarEl = document.createElement("img");
-    avatarEl.src = user.avatar;
+    avatarEl.src = "https://cdn.discordapp.com/avatars/" + user.id + "/" + user.avatar + ".png?size=32";
     avatarEl.style.cssText = "width:24px;height:24px;border-radius:50%;flex-shrink:0;";
-    bar.querySelector(".auth-user-bar-left").prepend(avatarEl);
+    const left = bar.querySelector(".auth-user-bar-left");
+    if (left) left.prepend(avatarEl);
   }
-  bar.classList.add("show");
-  window._currentUser = { id: user.id, username: user.username, discord: user.username, email: user.email||"", displayName };
-  /* ════════════════════════════════════════
+  if (bar) bar.classList.add("show");
+
+  window._currentUser = {
+    id: user.id,
+    username: user.username,
+    discord: user.username,
+    email: user.email || "",
+    displayName
+  };
+}
+
+/* ═══════════════════════════════════════
+   STEP NAV
+═══════════════════════════════════════ */
+function init() {
+  renderCmdCats(); renderCmds(); renderExtras(); renderPackages();
+  buildDiscordEmbed(); updatePreview(); observeReveals();
+}
+
+function goStep(n) {
+  document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+  const panel = document.getElementById("step-" + n);
+  if (panel) panel.classList.add("active");
+  document.querySelectorAll(".step-pill").forEach(pill => {
+    const ps = parseInt(pill.dataset.step);
+    pill.classList.remove("active","done");
+    if (ps === n) pill.classList.add("active");
+    else if (ps < n) pill.classList.add("done");
+    const num = document.getElementById("pn" + ps);
+    if (num) num.textContent = ps < n ? "✓" : ps;
+  });
+  const hero = document.querySelector(".page-hero");
+  if (hero) window.scrollTo({top: hero.offsetTop - 80, behavior:"smooth"});
+  setTimeout(() => observeReveals(), 120);
+}
+
+/* ═══════════════════════════════════════
+   COLOR
+═══════════════════════════════════════ */
+function pickColor(el) {
+  document.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+  el.classList.add("selected");
+  state.color = el.dataset.color;
+  document.getElementById("custom-color").value = state.color;
+  document.getElementById("custom-color-hex").textContent = state.color;
+  updatePreview();
+}
+function pickCustomColor(inp) {
+  document.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
+  state.color = inp.value;
+  document.getElementById("custom-color-hex").textContent = state.color;
+  updatePreview();
+}
+
+/* ═══════════════════════════════════════
+   UPLOADS
+═══════════════════════════════════════ */
+function readFileAsBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error("Read failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
+  const dataUrl = await readFileAsBase64(file);
+  state.logoUrl = dataUrl;
+  state.logoFile = {name: file.name, type: file.type, dataUrl};
+  document.getElementById("logo-upload-default").style.display = "none";
+  document.getElementById("logo-preview").style.display = "flex";
+  document.getElementById("logo-preview-img").src = dataUrl;
+  document.getElementById("logo-preview-name").textContent = file.name;
+  updatePreview();
+}
+function removeLogo(e) {
+  e.preventDefault(); e.stopPropagation();
+  state.logoUrl = null; state.logoFile = null;
+  document.getElementById("logo-upload-default").style.display = "";
+  document.getElementById("logo-preview").style.display = "none";
+  document.getElementById("logo-file-input").value = "";
+  updatePreview();
+}
+async function handleBannerUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
+  const dataUrl = await readFileAsBase64(file);
+  state.bannerUrl = dataUrl;
+  state.bannerFile = {name: file.name, type: file.type, dataUrl};
+  document.getElementById("banner-upload-default").style.display = "none";
+  document.getElementById("banner-preview").style.display = "flex";
+  document.getElementById("banner-preview-img").src = dataUrl;
+  document.getElementById("banner-preview-name").textContent = file.name;
+  updatePreview();
+}
+function removeBanner(e) {
+  e.preventDefault(); e.stopPropagation();
+  state.bannerUrl = null; state.bannerFile = null;
+  document.getElementById("banner-upload-default").style.display = "";
+  document.getElementById("banner-preview").style.display = "none";
+  document.getElementById("banner-file-input").value = "";
+  updatePreview();
+}
+
+/* ═══════════════════════════════════════
+   COMMANDS
+═══════════════════════════════════════ */
+function renderCmdCats() {
+  document.getElementById("cmd-cats").innerHTML = CMD_CATS.map(c =>
+    `<button class="cmd-cat-btn${c==="all"?" active":""}" onclick="setCmdCat('${c}')">${c}</button>`
+  ).join("");
+}
+function setCmdCat(cat) {
+  state.cmdCat = cat;
+  document.querySelectorAll(".cmd-cat-btn").forEach(b => b.classList.toggle("active", b.textContent === cat));
+  renderCmds();
+}
+function renderCmds() {
+  const list = state.cmdCat === "all" ? ALL_COMMANDS : ALL_COMMANDS.filter(c => c.cat === state.cmdCat);
+  document.getElementById("cmd-grid").innerHTML = list.map(c =>
+    `<span class="cmd-chip${state.selectedCmds.has(c.name)?" selected":""}" onclick="toggleCmd('${c.name}')">${c.name}</span>`
+  ).join("");
+  document.getElementById("cmd-count").textContent = state.selectedCmds.size;
+}
+function toggleCmd(name) {
+  state.selectedCmds.has(name) ? state.selectedCmds.delete(name) : state.selectedCmds.add(name);
+  renderCmds(); updatePreview();
+}
+
+/* ═══════════════════════════════════════
+   EXTRAS
+═══════════════════════════════════════ */
+function renderExtras() {
+  document.getElementById("extras-grid").innerHTML = EXTRAS.map(ex => `
+    <div class="extra-card${state.selectedExtras.has(ex.id)?" selected":""}" onclick="toggleExtra('${ex.id}')">
+      <div class="extra-top">
+        <div class="extra-name">${ex.name}</div>
+        <div class="extra-badge">${ex.badge}</div>
+      </div>
+      <div class="extra-desc">${ex.desc}</div>
+    </div>`).join("");
+}
+function toggleExtra(id) {
+  state.selectedExtras.has(id) ? state.selectedExtras.delete(id) : state.selectedExtras.add(id);
+  renderExtras(); calcPrice();
+}
+
+/* ═══════════════════════════════════════
+   PACKAGES
+═══════════════════════════════════════ */
+function renderPackages() {
+  document.getElementById("pkg-grid").innerHTML = PACKAGES.map(p => `
+    <div class="pkg-card${state.selectedPkg===p.id?" selected":""}${p.popular?" popular":""}" onclick="selectPkg('${p.id}')">
+      ${p.popular ? '<div class="pkg-popular-badge">Most Popular</div>' : ''}
+      <div class="pkg-icon">${p.icon}</div>
+      <div class="pkg-name">${p.name}</div>
+      <div class="pkg-price">${p.price}</div>
+      <div class="pkg-robux">${p.robux} Robux</div>
+      <div class="pkg-desc">${p.desc}</div>
+    </div>`).join("");
+}
+function selectPkg(id) {
+  state.selectedPkg = id;
+  renderPackages(); calcPrice();
+}
+function calcPrice() {
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  let price = pkg ? pkg.price : "—";
+  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id === id)).filter(Boolean);
+  const addonTotal = extrasArr.reduce((sum, e) => sum + (parseInt(e.badge.replace(/[^0-9]/g,"")) || 0), 0);
+  if (addonTotal > 0) price += " + $" + addonTotal + " add-ons";
+  const priceEl = document.getElementById("price-display");
+  if (priceEl) priceEl.textContent = price;
+}
+
+/* ═══════════════════════════════════════
+   PREVIEW
+═══════════════════════════════════════ */
+function updatePreview() {
+  const botName = (document.getElementById("bot-name") || {}).value || "Your Bot Name";
+  const botStatus = (document.getElementById("bot-status") || {}).value || "No status set";
+  const color = state.color || "#6390ff";
+
+  const prevName = document.getElementById("prev-bot-name");
+  if (prevName) prevName.textContent = botName;
+  const prevStatus = document.getElementById("prev-bot-status");
+  if (prevStatus) prevStatus.textContent = botStatus;
+
+  // Avatar
+  const logoImg = document.getElementById("prev-avatar-img");
+  const logoEmoji = document.getElementById("prev-avatar-emoji");
+  if (state.logoUrl) {
+    if (logoImg) { logoImg.src = state.logoUrl; logoImg.classList.add("show"); }
+    if (logoEmoji) logoEmoji.style.display = "none";
+    const sidebar = document.getElementById("prev-sidebar-avatar");
+    if (sidebar) sidebar.innerHTML = `<img src="${state.logoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    if (logoImg) logoImg.classList.remove("show");
+    if (logoEmoji) logoEmoji.style.display = "";
+  }
+
+  // Banner
+  const bannerImg = document.getElementById("prev-banner-img");
+  const bannerBg = document.getElementById("prev-banner-bg");
+  if (state.bannerUrl) {
+    if (bannerImg) { bannerImg.src = state.bannerUrl; bannerImg.classList.add("show"); }
+    if (bannerBg) bannerBg.style.background = "transparent";
+  } else {
+    if (bannerImg) bannerImg.classList.remove("show");
+    if (bannerBg) bannerBg.style.background = "";
+  }
+
+  // Color
+  const colorDot = document.getElementById("prev-color-dot");
+  if (colorDot) colorDot.style.background = color;
+  document.querySelectorAll(".prev-accent").forEach(el => el.style.color = color);
+
+  buildDiscordEmbed();
+}
+
+function buildDiscordEmbed() {
+  const botName = (document.getElementById("bot-name") || {}).value || "Your Bot Name";
+  const color = state.color || "#6390ff";
+  const cmdsArr = Array.from(state.selectedCmds);
+  const embedEl = document.getElementById("discord-embed");
+  if (!embedEl) return;
+
+  const avatarHtml = state.logoUrl
+    ? `<img src="${state.logoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;">`
+    : `<span>🤖</span>`;
+
+  embedEl.innerHTML = `
+    <div class="embed-bar" style="background:${color}"></div>
+    <div class="embed-body">
+      <div class="embed-author">
+        <div class="embed-avatar" style="background:${color}22">${avatarHtml}</div>
+        <div class="embed-author-name">${botName}</div>
+        <div class="embed-bot-badge">BOT</div>
+      </div>
+      <div class="embed-title">Bot Ready! 🚀</div>
+      <div class="embed-desc">Your custom Roblox bot has been set up.</div>
+      ${cmdsArr.length ? `<div class="embed-field"><div class="embed-field-name">Commands (${cmdsArr.length})</div><div class="embed-field-val">${cmdsArr.slice(0,6).join(", ")}${cmdsArr.length>6?" ...":""}</div></div>` : ""}
+    </div>`;
+}
+
+/* ═══════════════════════════════════════
+   SPAM GUARD
+═══════════════════════════════════════ */
+function markOrderSent() {
+  localStorage.setItem(SPAM_KEY, Date.now().toString());
+}
+function getCooldownRemaining() {
+  const last = localStorage.getItem(SPAM_KEY);
+  if (!last) return 0;
+  return Math.max(0, SPAM_WINDOW - (Date.now() - parseInt(last)));
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT ORDER
+═══════════════════════════════════════ */
+async function submitOrder() {
+  const btn = document.getElementById("place-order-btn");
+  if (!btn) return;
+
+  const cooldown = getCooldownRemaining();
+  if (cooldown > 0) {
+    alert("Please wait " + Math.ceil(cooldown/60000) + " min before placing another order.");
+    return;
+  }
+
+  // Gather form values
+  const discord  = (document.getElementById("order-discord")  || {}).value || "";
+  const serverId = (document.getElementById("order-server")   || {}).value || "";
+  const payment  = (document.getElementById("order-payment")  || {}).value || "";
+  const timeline = (document.getElementById("order-timeline") || {}).value || "";
+  const notes    = (document.getElementById("order-notes")    || {}).value || "";
+  const botName  = (document.getElementById("bot-name")       || {}).value || "Unnamed";
+  const botStatus= (document.getElementById("bot-status")     || {}).value || "";
+  const serverName=(document.getElementById("server-name")    || {}).value || "";
+  const footer   = (document.getElementById("embed-footer")   || {}).value || "";
+
+  if (!discord || !payment) { alert("Please fill in Discord username and payment method."); return; }
+
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  if (!pkg) { alert("Please select a package first."); return; }
+
+  const cmdsArr   = Array.from(state.selectedCmds);
+  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id === id)?.name).filter(Boolean);
+
+  const orderID = "EU-" + Math.random().toString(36).substr(2,6).toUpperCase();
+
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+
+  // Build config text
+  const configLines = [
+    "EXOTIC UTILITIES — BOT CONFIG FILE",
+    "Order ID: " + orderID,
+    "Generated: " + new Date().toLocaleString(),
+    "",
+    "--- CUSTOMER ---",
+    "Discord      : " + discord,
+    "Server Invite: " + serverId,
+    "",
+    "--- BOT ---",
+    "Name         : " + botName,
+    "Status       : " + botStatus,
+    "Server       : " + serverName,
+    "Footer       : " + footer,
+    "Color        : " + state.color,
+    "",
+    "--- ORDER ---",
+    "Package      : " + pkg.name + " — " + pkg.price,
+    "Commands (" + cmdsArr.length + "): " + (cmdsArr.join(", ") || "None selected"),
+    "Add-Ons      : " + (extrasArr.join(", ") || "None"),
+    "Logo         : " + (state.logoFile ? "Yes — " + state.logoFile.name : "No"),
+    "Banner       : " + (state.bannerFile ? "Yes — " + state.bannerFile.name : "No"),
+    "",
+    "--- PAYMENT ---",
+    "Payment      : " + payment,
+    "Timeline     : " + timeline,
+    "",
+    "--- NOTES ---",
+    notes || "(none)"
+  ].join("\n");
+
+  try {
+    const form = new FormData();
+    const embed = {
+      title: "New Bot Order",
+      color: 0x6390ff,
+      fields: [
+        {name:"📋 Order ID",     value:"`"+orderID+"`",                    inline:true},
+        {name:"📦 Package",      value:pkg.icon+" "+pkg.name+" — "+pkg.price, inline:true},
+        {name:"👤 Customer",     value:"Username: "+discord,              inline:false},
+        {name:"🤖 Bot Details",  value:"Name: "+botName+"\nStatus: "+botStatus+"\nServer: "+serverName+"\nFooter: "+footer+"\nColor: "+state.color, inline:false},
+        {name:"📦 Assets",       value:"Logo: "+(state.logoFile?"✅ "+state.logoFile.name:"❌ Not uploaded")+"\nBanner: "+(state.bannerFile?"✅ "+state.bannerFile.name:"❌ Not uploaded"), inline:false},
+        {name:"⚡ Commands ("+cmdsArr.length+")", value: cmdsArr.length ? cmdsArr.join(", ") : "None selected", inline:false},
+        {name:"🎮 Add-Ons",      value: extrasArr.length ? extrasArr.join(", ") : "None", inline:true},
+        {name:"💳 Payment",      value: payment,   inline:true},
+        {name:"⏱ Timeline",     value: timeline || "—", inline:true},
+        {name:"📝 Notes",        value: notes || "(none)", inline:false}
+      ],
+      footer: {text:"Exotic Utilities Order System • Config .txt attached"},
+      timestamp: new Date().toISOString()
+    };
+
+    const configBlob = new Blob([configLines], {type:"text/plain"});
+    form.append("payload_json", JSON.stringify({embeds:[embed]}));
+    form.append("files[0]", configBlob, "EU-Config-" + orderID + ".txt");
+    if (state.logoFile)   form.append("files[1]", dataURLtoBlob(state.logoFile.dataUrl),   "logo-" + state.logoFile.name);
+    if (state.bannerFile) form.append("files[2]", dataURLtoBlob(state.bannerFile.dataUrl), "banner-" + state.bannerFile.name);
+
+    const res = await fetch(ORDER_WEBHOOK, {method:"POST", body:form});
+    if (!res.ok) throw new Error("Webhook error " + res.status);
+
+    markOrderSent();
+    await saveOrderLocally({orderID, package:pkg.name, botName, serverName, commands:cmdsArr, extras:extrasArr, color:state.color, payment, timeline, notes, logoFile:state.logoFile||null, bannerFile:state.bannerFile||null});
+
+    // Show success
+    document.getElementById("step-4").style.display = "none";
+    document.getElementById("success-ticket").innerHTML = `
+      <div class="success-ticket-row"><span class="success-ticket-key">Order ID</span><span class="success-ticket-val">${orderID}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Package</span><span class="success-ticket-val">${pkg.name}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Bot Name</span><span class="success-ticket-val">${botName}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Discord</span><span class="success-ticket-val">${discord}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Payment</span><span class="success-ticket-val">${payment}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Config File</span><span class="success-ticket-val" style="color:var(--green)">✅ Sent to team</span></div>`;
+    document.getElementById("success-panel").classList.add("show");
+    document.getElementById("steps-nav").style.opacity = "0.4";
+    document.getElementById("steps-nav").style.pointerEvents = "none";
+    window.scrollTo({top:0, behavior:"smooth"});
+    setTimeout(() => openReview(), 4000);
+
+  } catch(err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = "🚀 Place Order";
+    alert("Something went wrong. Please try again or join our Discord.");
+  }
+}
+
+/* ═══════════════════════════════════════
+   SAVE ORDER
+═══════════════════════════════════════ */
+async function saveOrderLocally(orderData) {
+  if (!window._currentUser) return;
+  const order = {
+    order_id:    orderData.orderID,
+    package:     orderData.package,
+    bot_name:    orderData.botName,
+    server_name: orderData.serverName,
+    commands:    orderData.commands,
+    extras:      orderData.extras,
+    color:       orderData.color,
+    payment:     orderData.payment,
+    timeline:    orderData.timeline,
+    notes:       orderData.notes,
+    discord:     window._currentUser.username || "",
+    discord_id:  window._currentUser.id || "",
+    email:       window._currentUser.email || "",
+    logo:        orderData.logoFile || null,
+    banner:      orderData.bannerFile || null,
+    status:      "pending",
+    created_at:  new Date().toISOString()
+  };
+  // Save locally for instant dashboard display (includes images)
+  const key = "eu_orders_" + window._currentUser.id;
+  const local = JSON.parse(localStorage.getItem(key) || "[]");
+  local.unshift(order);
+  localStorage.setItem(key, JSON.stringify(local));
+  // Save to central JSONBin (strips images to save space)
+  try { await jbinAddOrder(order); }
+  catch(e) { console.warn("JSONBin save failed:", e); }
+}
+
+/* ═══════════════════════════════════════
+   DATAURL → BLOB HELPER
+═══════════════════════════════════════ */
+function dataURLtoBlob(dataUrl) {
+  const [header, data] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+
+/* ═══════════════════════════════════════
    REVIEW SYSTEM
-════════════════════════════════════════ */
-const REVIEW_WEBHOOK = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
+═══════════════════════════════════════ */
+const BANNER_B64 = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABkAooDASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAUGBwQDAgH/xABKEAABAwMBBAMJCwoGAwEAAAABAAIDBAURBhIhQVEUMWEHEyIyVHGSsdEjM0JSYnJzgZGToRUWJTQ1RGOCweEkNkNTsvGio/Am/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAQFAgMGAQf/xAA2EQABBAECBAUBBwMEAwAAAAAAAQIDBBEFEgYhMUETFCJRYRYVIzIzcYGhJEJSU2JysZHB4f/aAAwDAQACEQMRAD8AIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIi0PTFvpG2SmkdCyR72k5cM43lbIo1kdtQrtR1BKMXiKnczxFrIpabH6tD6KdFpvJofRU37Of7nOrxYn+BkyLWejU3k8PoKta9ghZQ07mxMbiX4IxncsZaTmN3EyjxG2zMkSMxnuUtFPac0/wDlKI1EswbEDjDfG/srVPYaCS2Ooo4QziHccrTHVe9MoTLeu1q0iRKuVyZuvprXP3MY5zuQX3URPgnfDI3DmOwVd9IWc0VKamoaBNKOr4reSxjgc9cISr2pxVIUlXnnohQwivOpNPwVMclXAWQSNGXbsNKp1vo566sZTQNy5+/J6gOaTQLEuFPKWqwWollRcInU5wHOOGDJ5L26LU494k9E+xaPZbNQ22INZE18g65HDeVJFjT1gY8ylRaerky5cFFPxXG2TbG3PyZAjd7wwdZ6lol807SVzHSwtEVSB4JHUewqo6ajc3UdMx7cObJgjkVokrKx+1S2qa1DZgdK3q3qhH9FqfJp/uynRanyaf7srWdlfmFK8g1e5QfVzk5bDJ+i1Pk0/wB2U6LU+TT/AHZWrYTC98g33PPq96f2GTOje04cxzT8oYX70epz7xJ6J9itGqBnVtC3nsf8irBZKWoiilfXFz3yyOc0O+C3JwFobVRZFZkt59c8Ku2fCZVDNpIpIwDJG9meraaRlfOFde6JgW6Bo4yKq2e3T3OsFPDu+M4jc0LRJArZNiE6lqST1fMSJhDkwvs09T/sSeifYtHtVmoaBo73E10g63uG8qR2Wkb2g/UpbaCqnMop+LI0fiNmf3MjIIOCCCOBRaXd7PR18b9qJrJTva9owWnms7rYH0lVJTyDwmHBUaessXNehc6ZrEV9FwmFQ8ERFGLgIpTS1H02/U0BGWl29vPG/wDotFNLTteWiCEAfIUuCr4qZzgotT1ptGRGbc5MmRTutooo726OKNrGhg3AYXXoGmjlnqXyMa7ZaAMjzrWkOZdhKfqSR1PNK3l7FXX3HFLJnvcUj8dey0nC1VtJSH91g9BRGjYmspKkxjc6d2FJ8gucKpULxMj4XSNZ0KJ0Wp8mn+7KdFqfJp/uytYwV+Ld9nt9yB9XO/0zKOi1Pk0/3ZTo1RxglHnYQtXXjX46FMSAfAPWsJKDWplFMouKnPejdnX5/wDhlTWPccNY53mC++jVGM94k9E+xTWm6aqqopWUz3RHvw23t62t35V9YMMDeS0RU/ETOS0v695N6MVMmTshmeSGxvJHXhp3L66LU/7EnoH2K6aYYx95uj8btr2qxiOPHirbFRRyZyRbXEroZEZsyZEi6bpgXKqDRgCZ2FzKvdyXB1MTlexHL3P1jXPeGMGXHgvvo9T/ALEnon2Lu07Ty1Ne5kAzL3p+yPqWg22m6LRRwyP77KBl8h+EVKr1PG74KTVda8iu3bkzAU9T5PJ6J9i+hS1OP1af7srTYxG+4vLQN0eF2BjceKFJbpyJ1cVUnFisxhhkvRanyaf7sp0Wp8mn+6K1fZb8UJst+KF79nNXuafq5/8AgZT0Wo4wTDzsIXmGPLtlrHOdyAWuAAdTQFQ7RTz1N7usdMcTNZIY+w7YCj2KiRKiIucltp2vebY9zm42kF0ec9UMh/kK+HRvYcPY5h+UMLVKSn6PSxxF225rfCfje481BGCKo1sBKxr2xw5wRxWbqOw01uIklc9NnJqZyUfCYWrilp+MMfor66JTY95j9FPIOXnkj/VjOzP5MmwmFrHRaf8A2I/RXPX0lM6jn9wj96f8HsRdPVEyqmcfFbZHo3Z1MvwgGepekcbpZmwxDake7Za3mVfrHp+koI2ukjbNOQC57xkDsCjQwLKuELrUdWioxo53NV7FAEMx8WJ5/lK/HRSN8dhb51rLY2DqAA5cF5VdFS1cRjmhY5vm6lLXTXJ3KCPi1Ff6mcjKcJhd9+ofyfcpKcA7PW3PJcKr3NVrsKdhDK2aNHt6KfKIixNgREQBERAEREAREQBERAEREAREQBaXprP5Aovogs0WoaeAZY6NuP8ASb6grCgnrOU4rX+manydFZUR0tNJUTHEbBk461ASaxoQwltNMcc9yn7jStraKWle5zWyDG00jI3qunR1D5TUfh7FNseLu+76HMaZ9n+Gq2s7jnk1nv8Ac6AEfKk/soi96gqLpDHDJFHHHG7aAbnr+tTtXpKhjoqiUVFRtRxkjePYqYTlV1h8zPS/udhpMGnPdvrpzQsGibj0WtNI8+BOQG9juBV9AWRNJaQQcEdRWlaZuYuVtjkdgTNAbIM8VJoTZTYpV8TafjFhn7nlW2KnqbzFXPxsNALmY63DqUvgYwNwX0ozUlxbbba+Ue+u8GLfxUzDYkVTmGSWbsjIc5XoQGt7xkfkymeNkj3YjnyXboW3iG2OrpG+HO7DD8kf3yqM57nvc952nOOSVq1uphS0EFOABsMA3KFXd48qud2On1ZrdNotrs6qvM9ZHtYxz3nZa1uSexVK0ajqKu/thl2HUkjthjQMY5OzzU3quc01gqXD4QDftVC0+f0zR/TtWyzMrJUahE0TTo5qsksie+DUlTbqKe3axjrZpNmKQB+4ceKuTwc4VL7obdmoo382H1rZbX0Z9iNoDd1lY+yoqExUartsLRh0k+fitxhSVsrG11HHVMYWh4yAT1LKjvWkaVbixU3awLTUnWR+FJ2uaTXp1kWPrnqSNdI6Kjllb4zGFw84Cox1bdPkfYrrc3bNtqSR/pO9SyvC8vSuY5EaZcM0oZ43rK1F59yct1dPddT0M9QWhzJGNGBwBJWi1I92cs10a0u1JSY4Fx/8StIqiDVSkdRduWVFVVFVTTxM1rJGxsTCIVHuiu2oqSEeM55wpbSltFvtkbXAd9l8N5XFqGJtTqK2wv8AFBLvswrKOa2MiR0yvUiWrisoRV29+p5SPbFG+R5Aa0ZJ7FWLRqGquOoG07Q0UpJw0chxyurXNU6G2NhY7ZMztk+biq5o+tobfcXy1jnMywhrgCcc+r6lhLPtlRvYl6XpTX0ZJtu5y8kNFc2PZ8ElZ9rpoF52gMbTASrMNS2cfvJ9B3sVN1PXx3C6unhLjGGhrSRjOFhelY+PDVNvD1KeGzvkaqJjuRiIiqjuyxdzvdqiCQ+Kxrifswr7IQXuPNUjudR7VynOHe943DtCu2Vc0kxGfOeJn5ubfZDPdau2r/LngAFLdzlvuNXJ2tH4Kv6pldLf6ra4PVl7njcW2pd8aX1BRYFzYVS81P0aQifCFm6uKqunb1QUFDJFPUd7lEzzjZJ4q0THZheewrJ53B0hI5qVblWJWqhT8P0I7cb2Pzjl0NAo9UUVZWxUkMUu3I8NBcMDzqbzxWZ6a/zDQ/Shabuws6kqyIqqRNf0+OlK1sfcr+rLxU2wQdHDTt7W1n6lXZdU3GRjmERBrhggNXf3RT7pRj5Lz6lU1AtSOSRUzyOo0PTazqjJHMRVL93Omfoeqf8AGcVPNUP3P27OnHnnIfWVMu8EEqxqpiLJymsrvvKnyV3Rg2qq6TfGlKsTT1qvaHGYa2TgZyFYSdyyg/LyatV52/0wZVcTtVs7ucriudek++WQ/LK81QPXKn0+BMRNT4LR3Nm5v5d8WMlXZ28qn9zEYuVU/wCLF7VcAFc0ExGfPuJn7rSN9iDfc6G3XmqNTN3t2ywg4O7d2L5k1dbTK2KNskhccAjqVX1odrUNR2YCjrcM19O3nK31qK629j1anuXUGhV5a/jPyq46GrdaitUXGa229ktOG98dIG5dvGMHgpVVrugn9FwfTf0Kn2HKyPKHKaZA2W6jHdMkONWXT+CPMzCke5s5z7xXVchzmIlx7Tk/0VPCuvcya0MuMjjjLGtxjscquu9z5U3KdzqlaGrTesTcZ6lpIVdtnhawr3fFiA9SsLVX7C7b1Fdn4+EB+CtZUy5pxFDlDM74J9pUHcNU0FHWSUz2TOcw4y0Ag/ipwb+Cr9XpSkqaqSeSpqA55zgEYH4LKVXo30GvTUqK7da6djlfrSMOOzROLeB751/guGt1hVTwvibTMYHtLSdonIKknaMoTj/FVP17J/oqvqCgitt1lpI3ue1mMOds5O7sVZK6wjfV0Ov02HSp5fuG5VCV0FTMmuUs8gz3pmB5z/YFXrZ3YVK7nkrWVtTA7/UYCBzwT7VdR1KbR/LKHiXf5xUXpjkVO93GqZqimp4pHRxMczLc7nZO/KtYUVfrLFcmiRkjoato8CQcexU25m9UE/eqqoqWngTISHeYrBZHwqquTOTbDTh1KOONjkRzUxj3O7X4xd4/o1XV+yzSzO2pZHvPNxyvxVczt7sndUqy1oGxL2PlERaiUEREAREQBERAEREAREQBERAEREAWo2Y7NppW8om+pZctVtQxb6ccom+pWOn/AIlOQ4sd9yxPk7Cxvee+Okb5guKe4UMD9masp2O+KZBtfYuXVtJU1tq6PSxd8kc8bsgetU5umL15J/7G+1S5pXxrhqZKLTtNqWmb5pNqlmumorWaOogiqBK90ZaNkHiPMqApoaYvXkn/ALG+1R1fSVNDP3mqiMb8ZA3bx9SrbD5ZFy5uDsdLhp1kWOB+VX5OZX7RFvdSUDp5BiSY5xj4PD+qqum6D8oXONhGY2Haf5lpMbWtAa0KRRiyu8quKNQRsaV2rzXqfWFT+6JSSOdDVt3saNhw5cj61bw9u0WA5c3r7Fz3SjZX2+amfjLm+D5x1KdYTexUQ5fSLHl7bXqZXT+/M+cPWte7eCyUNdT1YEjSCx+8eYrWYnMfAx7DlpGQVD0/q46Pizm1jkIDXh/QjW48aZo/Aqq6SgdLqKia34Mm35sK263hkmspdG3a71IHkdgB9qidB0MzKmSvc18YZ4EZ6snif/ua8sN3Tp+x7plqOHSnKq8y8QjNTva4tzggBUbumyMddoWR7mtYXAcslXyGZghbua6Tby8uG7HJZfqyrFZfKiRh8Bjthv1LbddhmCHw1ErrSuTsQ60rTX7Co/ogs2ytRsMTWafoHN+FEFG078altxUmKzf1Py9nFoqj/Cd6istC0vVMphsNS4DPg46+Z/us14le6hzchhwozFdy+6k9oRodqWDsa71LQRvceKoGg92oWO+LE4+paDAWB207a3cAM5Uign3ZVcUO/qkT4IKr2fzyptpudmnKnAexV26Td61pTgnwXxkHgN+eJwp8OypEK81/UqdQaqNi/wCJUe6I8t6I3HMqoK7a+ppJqOCZgz3tx2vNuVdsNnnudaGAObC05e8cuQVZaY50uEO00S5FDp7XPXpk4TTVDadlRJA9kTzhriOteWVqc9LTy0Io5Yw6IN2QOGFmFUyJlRJFDkxtPgkrXPX8LHySdJ1dL+704weSIii4Lstnc9Ph1Y5tAVy4Kmdz332q+aFch1K9qflHzLiBc3nZMvvb++Xird/EKt2gG4s0h5zH+ir94s1zF0nLaKaRr3bTXtbluD2q52CiNBa4ad29+Npx5kqNXif4yrgutatxLp7GMVF6HZUe8P8AmlZM7xitRvUrYLTUyncQwtB7SstXmou9SGfCbHNY969ORJ6Xbtaho/nn1FaV51nmio++apoW/Kd/xK0aUe6ObyOFtofhUr+LFzZb+hSO6G7NVSN5Rn+iqysWvZNq7sjx4sYOfP8A9KuqBa/NU6rRU20WGkaKGzplmOMhClJwRTyO5BRejjiwRN+USpOve5tsnDQfFJ3BW8SYg/Y4K6u/UXfqQWhhi1yn40zipyY7ML3cmkqH0T4FnY/Hw3buB3qZqGmWCSMbi5hASLnEifBjeciXlVeiKZMUVm/M6s8sp/xT8za4+LVU5+32KofVl64O9ZrNLaieIdfc1j3XCXPU1rftyraz7cKt6MpZbfLcaWQtc4OZvad3UVZoy1udp3WMeL7Fa1UVsSZOI1x6S3Vx0Mz1f/mGq+cuK1/tKm+lb611arOdQ1e5w8Ida8LMM3Wmbzlb61ULzl/c72FMUmp/t/8ARqKrHdDP+Ap/pD6lbKuNrKlzWjqVN7okuW01Ps8XOzn6sK2tLmJTgtDZu1FCnBXvubNHQa9xxvc1o8//AFlUbCu/c93Wqp5umA/AKspp96h2XETttFxZWnsUDpgZu13eeEoH2/8ASn28lX9KjNTcpCHAmfByMFXD/wAbUOGqcqsq/Cf9lhZ1rynqqaFm3LURMaOJeF6BZ9U6cu81VLK2l8EvOPdG+1YzSPjTLUye6XTgsuxM/bgt1RqC0Qs2nVsbuxgLj+AVG1NWQ194lqackscGgZHIL2dpm8eS/wDm32rnrrPcKGn7/Uw7EY6zkH1KtnlmkTDm4Q7DTKlCnLujkRyqcdLPLTVLKiF5a9hyCFe9P6lpa4Mhqi2nqTwLvBPm5eZUy1W6puUzoqYNJaMkk4C8qqlnpJjDURujkHWCFhDLJEuU6EzUaFW9925fV/0aucda5rlRwVtK6CdmQeo8WlQOh7hPURy0kzzIIWgsc47wM4wrTs5YXZxjsO9W7HJLHnsp8+mrzafZVrV5p3MmuNK+irpaaQb2O3HmOa8lNa3/AG64fw2qFVFK3a5Wn0+lI6WFr3dVQ+URFqwSwiIvQEREAREQBERAEREAREQBERAFrNvZihhx8QepZMrRBrKrhgZE2lj8FoGds71NpzNiX1HOcQ6dNdjY2FM4XmXd7XcRhAMKku1pWu/dox/OV4S6uuLvFjhb9WVOW9EhzCcOXvZE/cvjgqH3QB+mmfQj1leJ1Tdc7nQj+T+64ai6VFVcIq2payV8bgQMYBA4KNYtRyN2pkudI0KxUl8V6ovIu+k7b+T7a0SD3eTwn9g4BSdXUR0sMs0p2WRtySqj+eVSP3OP7wrgvuoam6UzYTE2FoOTsuzlbPMxsZ6CG/RLtmz4syclX37HXYbzKdROkqDhtUcO7DwV8if3t4dstOOax9sha8ObuLTkFWaPWNS1jQaOJzgMFxcd61V7SIio8m6vobpXMkrp0TCnjruiFNc+lRsxFUb/AObip3Rd0bVW5lJLIDPD4PXvcOBA8+5Vm93+S6QMjkpo2bByDnKiqeaSCVssTy17Tlrgd4WrzDWyq5vQnu059ygkU/J6dDXHFhjaGtw4eMea/B4rSqHSatr44gyaNkrh8LqSfWFe9mIoYonc+tTfPRHM/TV3djsWTVd4ZQUkscZb0iRuA1o8XtKztzi4kk5J3kr6qJ5ZpnTTSOkkf1lxyvEKtnn8Rcp0Oz0vTWUY8d1P0LVrNu07b28ogspVjotV1NJRx0/RY37AxtbZGVspzNjVVcQ+IKUtyFscSZXJY9YnGnqjtLR+KzniVPXXU09xon0r6WNrX9Z2yVApclSR2UM9Boy1IFZKmFyWHQQzfXdkDvW1X5m5ZhZLlLa6w1MTGvcWFmDyKmhrKq8lj9MrfVsxsZhSp1zSLNuz4kaZTB690J7oLxSSsOHNZkHzFWK0V8Nwo2zwnscM5xzCz++XSW61LZpY2s2W7IAJK8aCvq6CTvlLM5hPWM7j5wsGWkbIqp0JdjQ1s02Rryc01JfLWNb4rQ3zBUuLWVW1gEtLFI4dbtojK5rjqm5VTSyMtp2HhH1/apTrsRQRcNXFdtVcISusL61kLrfTu8N26Qg9XZlUxp7EcXPeXOcSScklFWzSrIuVO3oUY6USMb17qERFoLAndG1raS6bDzhkzdg+fgtAHUskU7Qapr6SNsTw2eMcHbj9qn1bbY0w45TW9EkuSJLEvPuaBwxwQqk/npU+RRemVHXDUdyrWlhe2JnxWDClLeYnQo4uGrcjtsmEQlNbXeKbFDTO2g0nbcOoqpr9c4ucSTklfiqppFkduU7mjSZThSJnYn9BbtU0rz1NyT9iv7jtPc7gTlZdaa59urW1MbQ5wBGD2hT3551HkUf3hU6rOyNvNTntf0qxcnR0adEOHXP7dP0Tf6qCXdeq91zrDUvjbG4jBAOVxYUKZ6PeqodDp8Loq7I3JzRDRdIfsKDzu9ZUrWfs+p+YVQ7XqapoaJlK2CN7WdR2iF0y6vqnxPZ0aMbTcZ2yrJluNI0Yq9jkJtDuOuulROSqTujm5srPnu9ZU1jgs+tupai30raeOCNzR8ohdI1lWZ/VmemVlHaia1Eyab2g3Zp3Oa3ln3LvjkfP50xvVKGs6zH6rH6ZX7+eVZ5NH6ZWfnI1In03fT+3+Setbv01dPnx/wDFTdMNt+ys7odS1FNVVVR3hjnVDg478YwMLrOtKnyRnpla23I2pjJLsaBcWVqomeSdyL1eMaiqvnLnsDdq8Uw/iD1ryuNS+trZKp7WtMhzgL4oZ3UtXFUM3ujdkDmqtXevd8nbsieldI++Mfwa9XOa+seWHLeBVF7on61SDmwn8V+HWNQf3OP7wqJvl1kusrHyRNj2BgAElWFi0x7NqHK6To1qtcSWRuEI0K89z4foiY/xz/xaqOpex32e2U7oI4mva55dvOMbv7KHVejH5cX2uVZbNVWRplTR2blBaaH+Kum/96KhBrGqH7pH6ZXLatSz0JqHdHY908m2TkjHYp7rcbnoqL0OZg0K4yu9it647mgjqymFSTrSt6hTR4+eV5v1hcD4sUbfxW1b0SdyI3hq77fyXojKg9bD/wDPS7/ht9arTtU3R5ztRDzMXLcL3cK6AwVEoMZ6wBjK0TXo3N2oTdP4eswWGveqYRcln0RHTx2ouika+R5Bkxw5D/7mpurpaesi71URNkb28FmFNUzU8gkgkdG8cWnCmqPVVfC0NmZHPjiRglYwW4mN2uQlajoVp86zQP5r/wCS6UNvo7e1zaSFjA45JO/P1r3qas01K6WSRrIoxkk8FTHaxqfg0cQ3/HKhrrda24vzUS+AetrRhbHXI0ZhpCg4euTSbrC4PG51b6+vlq3590dkA8uC51+L9VU96vXKndQxpGxGp2PlERYm0IiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiLwBERegIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIi8wAiIvQEyiIAiIvMAIiL0BERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf//Z";
 
 let reviewStar = 0;
 let reviewOrderData = null;
@@ -1202,309 +1200,219 @@ const STAR_DESCS = {
   5:"🤩 Absolutely amazing!"
 };
 
-// Price estimates for Robux/USD
 const PKG_PRICES = {
-  "Basic":   {usd:"$5–10",   rbx:"400–800"},
-  "Advanced":{usd:"$15–25",  rbx:"1,200–2,000"},
-  "Elite":   {usd:"$30–50",  rbx:"2,400–4,000"}
+  "Basic":   {usdMin:5,  usdMax:10, rbxMin:400,  rbxMax:800},
+  "Advanced":{usdMin:15, usdMax:25, rbxMin:1200, rbxMax:2000},
+  "Elite":   {usdMin:30, usdMax:50, rbxMin:2400, rbxMax:4000}
 };
 const ADDON_PRICES = {
-  "tickets":  {usd:"$5",  rbx:"400"},
-  "erlc":     {usd:"$8",  rbx:"640"},
-  "xp":       {usd:"$3",  rbx:"240"},
-  "boost":    {usd:"$3",  rbx:"240"},
-  "vc":       {usd:"$3",  rbx:"240"},
-  "verify":   {usd:"$4",  rbx:"320"},
-  "logs":     {usd:"$3",  rbx:"240"}
+  "tickets":{usd:5,rbx:400},"erlc":{usd:8,rbx:640},"xp":{usd:3,rbx:240},
+  "boost":{usd:3,rbx:240},"vc":{usd:3,rbx:240},"verify":{usd:4,rbx:320},"logs":{usd:3,rbx:240}
 };
 
-function openReview(){
-  // Pre-fill user info
-  try{
-    const u = JSON.parse(localStorage.getItem("eu_discord_user")||"{}");
-    if(u && u.id){
-      const name = u.global_name||u.username||"";
+function openReview() {
+  try {
+    const u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}");
+    if (u && u.id) {
+      const name = u.global_name || u.username || "";
       document.getElementById("review-username").textContent = name;
-      document.getElementById("review-usertag").textContent = "@"+(u.username||"");
+      document.getElementById("review-usertag").textContent = "@" + (u.username || "");
       const avatarEl = document.getElementById("review-avatar");
-      if(u.avatar){
+      if (avatarEl && u.avatar) {
         avatarEl.outerHTML = `<div class="review-avatar"><img src="https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64" alt=""></div>`;
-      } else {
+      } else if (avatarEl) {
         avatarEl.textContent = name.slice(0,2).toUpperCase();
       }
     }
-  }catch(e){}
+  } catch(e) {}
 
-  // Pre-fill last order summary
-  try{
-    const u = JSON.parse(localStorage.getItem("eu_discord_user")||"{}");
-    if(u && u.id){
-      const orders = JSON.parse(localStorage.getItem("eu_orders_"+u.id)||"[]");
-      if(orders.length){
+  try {
+    const u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}");
+    if (u && u.id) {
+      const orders = JSON.parse(localStorage.getItem("eu_orders_" + u.id) || "[]");
+      if (orders.length) {
         const last = orders[0];
         reviewOrderData = last;
-        // Build estimate
-        const pkg = PKG_PRICES[last.package]||{usd:"—",rbx:"—"};
-        let usdMin=0,usdMax=0,rbxMin=0,rbxMax=0;
-        if(last.package==="Basic"){usdMin=5;usdMax=10;rbxMin=400;rbxMax=800;}
-        else if(last.package==="Advanced"){usdMin=15;usdMax=25;rbxMin=1200;rbxMax=2000;}
-        else if(last.package==="Elite"){usdMin=30;usdMax=50;rbxMin=2400;rbxMax=4000;}
-        const extras = Array.isArray(last.extras)?last.extras:[];
-        extras.forEach(ex=>{
-          const key=Object.keys(ADDON_PRICES).find(k=>ex.toLowerCase().includes(k));
-          if(key){
-            const a=ADDON_PRICES[key];
-            usdMin+=parseInt(a.usd.replace("$",""));
-            usdMax+=parseInt(a.usd.replace("$",""));
-            rbxMin+=parseInt(a.rbx.replace(",",""));
-            rbxMax+=parseInt(a.rbx.replace(",",""));
-          }
+        const pp = PKG_PRICES[last.package] || {usdMin:0,usdMax:0,rbxMin:0,rbxMax:0};
+        let usdMin=pp.usdMin, usdMax=pp.usdMax, rbxMin=pp.rbxMin, rbxMax=pp.rbxMax;
+        const extras = Array.isArray(last.extras) ? last.extras : [];
+        extras.forEach(ex => {
+          const key = Object.keys(ADDON_PRICES).find(k => ex.toLowerCase().includes(k));
+          if (key) { const a = ADDON_PRICES[key]; usdMin+=a.usd; usdMax+=a.usd; rbxMin+=a.rbx; rbxMax+=a.rbx; }
         });
-        const usdEst=usdMin===usdMax?`$${usdMin}`:`$${usdMin}–${usdMax}`;
-        const rbxEst=rbxMin===rbxMax?`${rbxMin.toLocaleString()}`:`${rbxMin.toLocaleString()}–${rbxMax.toLocaleString()}`;
-
-        document.getElementById("review-order-summary").style.display="block";
-        document.getElementById("review-order-items").innerHTML=`
-          <div class="review-order-item"><div class="review-order-item-label">Order ID</div><div class="review-order-item-val" style="font-family:'JetBrains Mono';font-size:11px;">${last.order_id||"—"}</div></div>
-          <div class="review-order-item"><div class="review-order-item-label">Package</div><div class="review-order-item-val">${last.package||"—"}</div></div>
-          <div class="review-order-item"><div class="review-order-item-label">Bot Name</div><div class="review-order-item-val">${last.bot_name||"—"}</div></div>
-          <div class="review-order-item"><div class="review-order-item-label">Est. USD</div><div class="review-order-item-val" style="color:var(--green);">${usdEst}</div></div>
-          <div class="review-order-item"><div class="review-order-item-label">Est. Robux</div><div class="review-order-item-val" style="color:var(--yellow);">R$ ${rbxEst}</div></div>
-        `;
+        const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–"+usdMax;
+        const rbxEst = rbxMin===rbxMax ? rbxMin.toLocaleString() : rbxMin.toLocaleString()+"–"+rbxMax.toLocaleString();
+        const summaryEl = document.getElementById("review-order-summary");
+        if (summaryEl) {
+          summaryEl.style.display = "block";
+          document.getElementById("review-order-items").innerHTML = `
+            <div class="review-order-item"><div class="review-order-item-label">Order ID</div><div class="review-order-item-val" style="font-family:'JetBrains Mono';font-size:11px;">${last.order_id||"—"}</div></div>
+            <div class="review-order-item"><div class="review-order-item-label">Package</div><div class="review-order-item-val">${last.package||"—"}</div></div>
+            <div class="review-order-item"><div class="review-order-item-label">Bot Name</div><div class="review-order-item-val">${last.bot_name||"—"}</div></div>
+            <div class="review-order-item"><div class="review-order-item-label">Est. USD</div><div class="review-order-item-val" style="color:var(--green);">${usdEst}</div></div>
+            <div class="review-order-item"><div class="review-order-item-label">Est. Robux</div><div class="review-order-item-val" style="color:var(--yellow);">R$ ${rbxEst}</div></div>`;
+        }
       }
     }
-  }catch(e){}
+  } catch(e) {}
 
-  document.getElementById("review-overlay").classList.add("show");
+  const overlay = document.getElementById("review-overlay");
+  if (overlay) overlay.classList.add("show");
 }
 
-function closeReview(){
-  document.getElementById("review-overlay").classList.remove("show");
+function closeReview() {
+  const overlay = document.getElementById("review-overlay");
+  if (overlay) overlay.classList.remove("show");
 }
 
-function setStar(val){
+function setStar(val) {
   reviewStar = val;
-  document.querySelectorAll(".star-btn").forEach((btn,i)=>{
-    btn.classList.toggle("lit", i < val);
-  });
-  document.getElementById("stars-desc").textContent = STAR_DESCS[val]||"";
-  document.getElementById("stars-desc").style.color = val>=4?"var(--green)":val===3?"var(--yellow)":"var(--red)";
+  document.querySelectorAll(".star-btn").forEach((btn,i) => btn.classList.toggle("lit", i < val));
+  const desc = document.getElementById("stars-desc");
+  if (desc) {
+    desc.textContent = STAR_DESCS[val] || "";
+    desc.style.color = val>=4 ? "var(--green)" : val===3 ? "var(--yellow)" : "var(--red)";
+  }
   checkReviewReady();
 }
 
-function updateCharCount(){
-  const len = document.getElementById("review-text").value.length;
-  document.getElementById("review-char").textContent = len;
+function updateCharCount() {
+  const val = (document.getElementById("review-text") || {}).value || "";
+  const el = document.getElementById("review-char");
+  if (el) el.textContent = val.length;
   checkReviewReady();
 }
 
-function checkReviewReady(){
-  const hasStars = reviewStar > 0;
-  const hasText = document.getElementById("review-text").value.trim().length >= 10;
-  document.getElementById("review-submit-btn").disabled = !(hasStars && hasText);
-}
-
-async function submitReview(){
+function checkReviewReady() {
+  const text = (document.getElementById("review-text") || {}).value || "";
   const btn = document.getElementById("review-submit-btn");
-  btn.disabled = true;
-  btn.textContent = "Sending...";
+  if (btn) btn.disabled = !(reviewStar > 0 && text.trim().length >= 10);
+}
 
-  const text = document.getElementById("review-text").value.trim();
-  const stars = "⭐".repeat(reviewStar) + "✩".repeat(5-reviewStar);
-  const starsLine = `${reviewStar}/5 ${stars}`;
+async function submitReview() {
+  const btn = document.getElementById("review-submit-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
+
+  const text = (document.getElementById("review-text") || {}).value.trim();
+  const stars = "⭐".repeat(reviewStar) + "✩".repeat(5 - reviewStar);
+  const starsLine = reviewStar + "/5 " + stars;
 
   let u = {};
-  try{ u = JSON.parse(localStorage.getItem("eu_discord_user")||"{}"); }catch(e){}
+  try { u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}"); } catch(e) {}
 
-  const username = u.global_name||u.username||"Anonymous";
-  const discordTag = u.username ? "@"+u.username : "Unknown";
-  const avatarUrl = (u.avatar&&u.id) ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png` : null;
+  const username  = u.global_name || u.username || "Anonymous";
+  const discordTag = u.username ? "@" + u.username : "Unknown";
+  const avatarUrl  = (u.avatar && u.id) ? "https://cdn.discordapp.com/avatars/" + u.id + "/" + u.avatar + ".png" : null;
 
-  // Build order fields for embed
   const orderFields = [];
-  if(reviewOrderData){
+  if (reviewOrderData) {
     const last = reviewOrderData;
-    const extras = Array.isArray(last.extras)&&last.extras.length ? last.extras.join(", ") : "None";
+    const extras = Array.isArray(last.extras) && last.extras.length ? last.extras.join(", ") : "None";
     const cmds = Array.isArray(last.commands) ? last.commands.length : 0;
-
-    // Estimate spend
-    let usdMin=0,usdMax=0,rbxMin=0,rbxMax=0;
-    if(last.package==="Basic"){usdMin=5;usdMax=10;rbxMin=400;rbxMax=800;}
-    else if(last.package==="Advanced"){usdMin=15;usdMax=25;rbxMin=1200;rbxMax=2000;}
-    else if(last.package==="Elite"){usdMin=30;usdMax=50;rbxMin=2400;rbxMax=4000;}
-    const extrasArr = Array.isArray(last.extras)?last.extras:[];
-    extrasArr.forEach(ex=>{
-      const key=Object.keys(ADDON_PRICES).find(k=>ex.toLowerCase().includes(k));
-      if(key){const a=ADDON_PRICES[key];usdMin+=parseInt(a.usd.replace("$",""));usdMax+=parseInt(a.usd.replace("$",""));rbxMin+=parseInt(a.rbx.replace(",",""));rbxMax+=parseInt(a.rbx.replace(",",""));}
+    const pp = PKG_PRICES[last.package] || {usdMin:0,usdMax:0,rbxMin:0,rbxMax:0};
+    let usdMin=pp.usdMin,usdMax=pp.usdMax,rbxMin=pp.rbxMin,rbxMax=pp.rbxMax;
+    (Array.isArray(last.extras)?last.extras:[]).forEach(ex => {
+      const key = Object.keys(ADDON_PRICES).find(k => ex.toLowerCase().includes(k));
+      if (key) { const a=ADDON_PRICES[key]; usdMin+=a.usd; usdMax+=a.usd; rbxMin+=a.rbx; rbxMax+=a.rbx; }
     });
-    const usdEst=usdMin===usdMax?`$${usdMin}`:`$${usdMin}–${usdMax}`;
-    const rbxEst=rbxMin===rbxMax?`${rbxMin.toLocaleString()} Robux`:`${rbxMin.toLocaleString()}–${rbxMax.toLocaleString()} Robux`;
-
+    const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–"+usdMax;
+    const rbxEst = rbxMin===rbxMax ? rbxMin.toLocaleString()+" Robux" : rbxMin.toLocaleString()+"–"+rbxMax.toLocaleString()+" Robux";
     orderFields.push(
-      {name:"📦 Package",value:last.package||"—",inline:true},
-      {name:"🤖 Bot Name",value:last.bot_name||"—",inline:true},
-      {name:"⚡ Commands",value:`${cmds} selected`,inline:true},
-      {name:"🎮 Add-Ons",value:extras,inline:true},
-      {name:"💵 Est. USD",value:usdEst,inline:true},
-      {name:"🪙 Est. Robux",value:rbxEst,inline:true},
+      {name:"📦 Package",   value: last.package||"—", inline:true},
+      {name:"🤖 Bot Name",  value: last.bot_name||"—", inline:true},
+      {name:"⚡ Commands",  value: cmds+" selected",   inline:true},
+      {name:"🎮 Add-Ons",   value: extras,              inline:true},
+      {name:"💵 Est. USD",  value: usdEst,              inline:true},
+      {name:"🪙 Est. Robux",value: rbxEst,              inline:true}
     );
   }
 
-  // Exact embed matching the screenshot style
   const payload = {
     username: "Exotic Utilities",
     avatar_url: "https://martin54-hub2.github.io/Exotic-Utilities-/logo.png",
-    embeds:[{
-      author:{
-        name: username,
-        icon_url: avatarUrl||undefined
-      },
-      description: `${starsLine}\n\n> ${text}`,
-      color: reviewStar >= 4 ? 0x22c55e : reviewStar === 3 ? 0xf59e0b : 0xef4444,
+    embeds: [{
+      author: {name: username, icon_url: avatarUrl || undefined},
+      description: starsLine + "\n\n> " + text,
+      color: reviewStar>=4 ? 0x22c55e : reviewStar===3 ? 0xf59e0b : 0xef4444,
       fields: orderFields,
-      image:{ url:"attachment://banner.png" },
-      footer:{
-        text:`${discordTag} • Exotic Utilities • Premium Bots`,
-      },
+      image: {url: "attachment://banner.png"},
+      footer: {text: discordTag + " • Exotic Utilities • Premium Bots"},
       timestamp: new Date().toISOString()
     }]
   };
 
-  // Send with banner image attached (matches the screenshot exactly)
-  try{
-    // Convert base64 banner to blob
-    const bannerB64 = "data:image/png;base64,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dI++Mfwa9XOa+seWHLeBVF7on61SDmwn8V+HWNQf3OP7wqJvl1kusrHyRNj2BgAElWFi0x7NqHK6To1qtcSWRuEI0K89z4foiY/xz/xaqOpex32e2U7oI4mva55dvOMbv7KHVejH5cX2uVZbNVWRplTR2blBaaH+Kum/96KhBrGqH7pH6ZXLatSz0JqHdHY908m2TkjHYp7rcbnoqL0OZg0K4yu9it647mgjqymFSTrSt6hTR4+eV5v1hcD4sUbfxW1b0SdyI3hq77fyXojKg9bD/wDPS7/ht9arTtU3R5ztRDzMXLcL3cK6AwVEoMZ6wBjK0TXo3N2oTdP4eswWGveqYRcln0RHTx2ouika+R5Bkxw5D/7mpurpaesi71URNkb28FmFNUzU8gkgkdG8cWnCmqPVVfC0NmZHPjiRglYwW4mN2uQlajoVp86zQP5r/wCS6UNvo7e1zaSFjA45JO/P1r3qas01K6WSRrIoxkk8FTHaxqfg0cQ3/HKhrrda24vzUS+AetrRhbHXI0ZhpCg4euTSbrC4PG51b6+vlq3590dkA8uC51+L9VU96vXKndQxpGxGp2PlERYm0IiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiLwBERegIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIi8wAiIvQEyiIAiIvMAIiL0BERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf//Z";
-    const bannerBlob = dataURLtoBlob(bannerB64);
-
+  try {
+    const bannerBlob = dataURLtoBlob(BANNER_B64);
     const form = new FormData();
     form.append("payload_json", JSON.stringify(payload));
     form.append("files[0]", bannerBlob, "banner.png");
-
     const res = await fetch(REVIEW_WEBHOOK, {method:"POST", body:form});
-    if(!res.ok) throw new Error("Webhook failed: "+res.status);
+    if (!res.ok) throw new Error("Webhook " + res.status);
 
-    // Show sent state
-    document.getElementById("review-form-view").style.display="none";
-    document.getElementById("review-sent-view").style.display="block";
-
-    // Mark review as done so we don't prompt again for this order
-    if(reviewOrderData) localStorage.setItem("eu_reviewed_"+reviewOrderData.order_id,"1");
-
-  }catch(err){
+    document.getElementById("review-form-view").style.display = "none";
+    document.getElementById("review-sent-view").style.display = "block";
+    if (reviewOrderData) localStorage.setItem("eu_reviewed_" + reviewOrderData.order_id, "1");
+  } catch(err) {
     console.error(err);
-    btn.disabled=false;
-    btn.textContent="Submit Review";
+    if (btn) { btn.disabled = false; btn.textContent = "Submit Review"; }
     alert("Couldn't send review. Please try again.");
   }
 }
 
-// Close overlay on background click
-document.getElementById("review-overlay").addEventListener("click",function(e){
-  if(e.target===this) closeReview();
-});
-
-init();
-})();
-
-function signOut(){
-  localStorage.removeItem("eu_discord_token");
-  localStorage.removeItem("eu_discord_token_type");
-  localStorage.removeItem("eu_discord_user");
-  window.location.href = "login.html";
+/* ═══════════════════════════════════════
+   OBSERVE REVEALS
+═══════════════════════════════════════ */
+function observeReveals() {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); }
+    });
+  }, {threshold: 0.05});
+  document.querySelectorAll(".reveal:not(.visible)").forEach(el => obs.observe(el));
 }
-
-/* Save order to localStorage for dashboard */
 
 /* ═══════════════════════════════════════
-   JSONBIN — Central Order Storage
+   CURSOR
 ═══════════════════════════════════════ */
-const JBIN_KEY  = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
-const JBIN_BASE = "https://api.jsonbin.io/v3";
-
-async function getBinId(){
-  let id = localStorage.getItem("eu_bin_id");
-  if(id) return id;
-  try{
-    const res = await fetch(JBIN_BASE+"/b",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
-      body:JSON.stringify({orders:[]})
-    });
-    const data = await res.json();
-    id = data.metadata && data.metadata.id;
-    if(id){ localStorage.setItem("eu_bin_id", id); }
-  }catch(e){ console.error("Bin create failed",e); }
-  return id;
-}
-
-async function jbinRead(){
-  try{
-    const id = await getBinId();
-    if(!id) return [];
-    const res = await fetch(JBIN_BASE+"/b/"+id+"/latest",{
-      headers:{"X-Master-Key":JBIN_KEY}
-    });
-    const data = await res.json();
-    return Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
-  }catch(e){ console.error("jbinRead failed",e); return []; }
-}
-
-async function jbinWrite(orders){
-  const id = await getBinId();
-  if(!id) throw new Error("No bin ID");
-  await fetch(JBIN_BASE+"/b/"+id,{
-    method:"PUT",
-    headers:{"Content-Type":"application/json","X-Master-Key":JBIN_KEY},
-    body:JSON.stringify({orders})
+(function() {
+  const dot = document.getElementById("cursor-dot");
+  const ring = document.getElementById("cursor-ring");
+  if (!dot || !ring) return;
+  let mx=-100, my=-100, dx=-100, dy=-100, rx=-100, ry=-100, hov=false;
+  document.addEventListener("mousemove", function(e) { mx=e.clientX; my=e.clientY; });
+  document.addEventListener("mouseover", function(e) {
+    try { if (e.target && e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=true; } catch(err) {}
   });
-}
+  document.addEventListener("mouseout", function(e) {
+    try { if (e.target && e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=false; } catch(err) {}
+  });
+  function tick() {
+    dx+=(mx-dx)*0.45; dy+=(my-dy)*0.45;
+    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    dot.style.transform  = "translate(" + (dx-5)  + "px," + (dy-5)  + "px)";
+    ring.style.transform = "translate(" + (rx-22) + "px," + (ry-22) + "px) scale(" + (hov?1.8:1) + ")";
+    ring.style.opacity   = hov ? "0.7" : "0.4";
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
 
-async function jbinAddOrder(order){
-  const lean = Object.assign({}, order);
-  if(lean.logo && lean.logo.dataUrl){ lean.logo = {name:lean.logo.name, type:lean.logo.type}; }
-  if(lean.banner && lean.banner.dataUrl){ lean.banner = {name:lean.banner.name, type:lean.banner.type}; }
-  const orders = await jbinRead();
-  orders.unshift(lean);
-  await jbinWrite(orders);
-}
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function() {
+  checkAuth();
+  init();
 
-async function jbinDeleteOrder(orderId){
-  const orders = await jbinRead();
-  const filtered = orders.filter(function(o){ return o.order_id !== orderId; });
-  await jbinWrite(filtered);
-  return filtered;
-}
+  // Close modals on overlay click
+  const reviewOverlay = document.getElementById("review-overlay");
+  if (reviewOverlay) {
+    reviewOverlay.addEventListener("click", function(e) {
+      if (e.target === this) closeReview();
+    });
+  }
+});
 
-async function saveOrderLocally(orderData){
-  if(!window._currentUser) return;
-  const order = {
-    order_id:    orderData.orderID,
-    package:     orderData.package,
-    bot_name:    orderData.botName,
-    server_name: orderData.serverName,
-    commands:    orderData.commands,
-    extras:      orderData.extras,
-    color:       orderData.color,
-    payment:     orderData.payment,
-    timeline:    orderData.timeline,
-    notes:       orderData.notes,
-    discord:     window._currentUser.username||"",
-    discord_id:  window._currentUser.id||"",
-    email:       window._currentUser.email||"",
-    logo:        orderData.logoFile||null,
-    banner:      orderData.bannerFile||null,
-    status:      "pending",
-    created_at:  new Date().toISOString()
-  };
-  // Save to localStorage for instant dashboard display (with images)
-  const key = "eu_orders_"+window._currentUser.id;
-  const local = JSON.parse(localStorage.getItem(key)||"[]");
-  local.unshift(order);
-  localStorage.setItem(key, JSON.stringify(local));
-  // Save to JSONBin for admin panel (central, cross-device)
-  try{ await jbinAddOrder(order); }
-  catch(e){ console.warn("JSONBin save failed (order still sent via webhook):", e); }
-}
 </script>
 </body>
 </html>
