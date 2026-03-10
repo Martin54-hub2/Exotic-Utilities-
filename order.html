@@ -293,74 +293,92 @@ img{max-width:100%;}
 
 @media(max-width:768px){.nav-links{display:none!important;}.form-row{grid-template-columns:1fr;}.pkg-grid{grid-template-columns:1fr;}.steps-nav{flex-wrap:wrap;height:auto;padding:8px;gap:4px;}.step-pill{flex:unset;padding:8px 14px;font-size:12px;}}
 @media(max-width:500px){body,*,a,button{cursor:auto!important;}#cursor-dot,#cursor-ring{display:none!important;}}
+
+/* ── Extra-card (Add-Ons) ── */
+.extra-card{padding:14px 16px;border-radius:12px;background:var(--surface);border:2px solid var(--border);cursor:pointer;transition:all 0.22s;position:relative;}
+.extra-card:hover{border-color:rgba(99,144,255,0.25);}
+.extra-card.selected{border-color:var(--blue);background:rgba(99,144,255,0.06);}
+.extra-card.included{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);opacity:0.7;cursor:default;}
+.extra-card.included::after{content:'Included in package';position:absolute;top:8px;right:10px;font-size:10px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.extra-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.extra-card-name{font-size:14px;font-weight:700;color:var(--white);}
+.extra-card-badge{padding:3px 8px;border-radius:6px;background:rgba(99,144,255,0.1);color:var(--blue);font-size:11px;font-weight:800;border:1px solid rgba(99,144,255,0.2);}
+.extra-card.selected .extra-card-badge{background:rgba(99,144,255,0.18);color:#fff;}
+.extra-card-desc{font-size:12px;color:var(--gray-lt);}
+.extras-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;}
+
+/* ── Command chip included/extra states ── */
+.cmd-chip.included{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.25);color:var(--green);text-decoration:line-through;opacity:0.7;cursor:default;}
+.cmd-chip.included::after{content:'✓';margin-left:4px;font-size:10px;}
+.cmd-chip.extra-cost{border-color:rgba(245,158,11,0.3);color:#f59e0b;}
+.cmd-chip.extra-cost.selected{background:rgba(245,158,11,0.1);border-color:#f59e0b;}
+.pkg-included-note{font-size:11px;color:var(--gray-lt);padding:8px 2px;display:flex;align-items:center;gap:6px;}
+.pkg-included-note b{color:var(--green);}
+
+/* ── Price estimate box ── */
+.price-estimate{background:rgba(99,144,255,0.05);border:1px solid rgba(99,144,255,0.15);border-radius:14px;padding:16px 18px;margin-top:14px;}
+.price-estimate-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;}
+.price-estimate-row .key{color:var(--gray-lt);}
+.price-estimate-row .val{font-weight:700;color:var(--white);}
+.price-estimate-divider{height:1px;background:var(--border);margin:8px 0;}
+.price-estimate-total{font-size:16px;font-weight:900;color:var(--blue);}
+
+/* ── Step reorder (Package first) ── */
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+/* ── Preview command carousel ── */
+.prev-cmd-ticker{font-size:11px;color:var(--gray-lt);min-height:20px;transition:opacity 0.3s;}
+
+/* ── Admin user search ── */
+.admin-search-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
 </style>
 </head>
 <body>
-
 <div id="cursor-dot"></div>
-<div id="cursor-ring">
-  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-    <circle cx="22" cy="22" r="18" stroke="#6390ff" stroke-width="1" opacity="0.6"/>
-    <line x1="22" y1="0" x2="22" y2="8" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-    <line x1="22" y1="36" x2="22" y2="44" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-    <line x1="0" y1="22" x2="8" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-    <line x1="36" y1="22" x2="44" y2="22" stroke="#6390ff" stroke-width="1" opacity="0.4"/>
-  </svg>
-</div>
+<div id="cursor-ring"></div>
 
-<!-- Auth Gate (shown if not logged in) -->
-<div class="auth-gate" id="auth-gate" style="display:none;">
-  <div class="auth-gate-card">
-    <div class="auth-gate-icon">🔐</div>
-    <div class="auth-gate-title">Sign in to Order</div>
-    <div class="auth-gate-sub">You need an account to place a bot order. It's free and takes 30 seconds to set up.</div>
-    <div class="auth-gate-btns">
-      <a href="signup.html" class="auth-gate-primary">Create Free Account →</a>
-      <a href="login.html" class="auth-gate-secondary">Sign In</a>
-    </div>
-    <div class="auth-gate-note">Already have an account? <a href="login.html" style="color:var(--blue);text-decoration:none;">Sign in here</a></div>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo"><a href="index.html" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;"><img src="logo.png" alt="" style="width:28px;height:28px;border-radius:6px;"> Exotic Utilities</a></div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Home</a>
+    <a href="showcase.html" class="nav-link">Showcase</a>
+    <a href="order.html" class="nav-link active">Order</a>
+    <a href="dashboard.html" class="nav-link">Dashboard</a>
   </div>
-</div>
-
-<!-- Logged-in user bar -->
-<div class="auth-user-bar" id="auth-user-bar">
-  <div class="auth-user-bar-left">
-    <span>👤</span>
-    <span>Signed in as <strong id="auth-user-email"></strong></span>
-  </div>
-  <button class="auth-signout" onclick="signOut()">Sign Out</button>
-</div>
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo">
-      <div class="nav-logo-icon"><img src="logo.png" alt="EU"></div>
-      <div class="nav-logo-text">Exotic <span>Utilities</span></div>
-    </a>
-    <div class="nav-links">
-      <a href="index.html" class="nav-link">Home</a>
-      <a href="index.html#features" class="nav-link">Features</a>
-      <a href="index.html#pricing" class="nav-link">Pricing</a>
-      <a href="showcase.html" class="nav-link">Showcase</a>
-      <a href="order.html" class="nav-link active">Build Bot</a>
-      <a href="dashboard.html" class="nav-link">Dashboard</a>
-      <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" class="nav-cta">Join Discord ↗</a>
+  <div class="auth-user-bar" id="auth-user-bar">
+    <div class="auth-user-bar-left">
+      <span id="auth-user-email" style="font-size:13px;font-weight:600;color:var(--gray-lt);"></span>
     </div>
+    <button onclick="localStorage.removeItem('eu_discord_user');window.location.href='login.html';" style="padding:7px 14px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--gray-lt);font-size:12px;font-weight:600;font-family:'Outfit';cursor:pointer;">Sign Out</button>
   </div>
 </nav>
 
+<!-- AUTH GATE -->
+<div class="auth-gate" id="auth-gate" style="display:none;">
+  <div class="auth-gate-card">
+    <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+    <div style="font-size:22px;font-weight:900;margin-bottom:8px;">Login Required</div>
+    <div style="font-size:14px;color:var(--gray-lt);margin-bottom:28px;">Sign in with Discord to access the bot builder.</div>
+    <a href="login.html" class="btn-primary" style="text-decoration:none;display:inline-block;">Continue with Discord</a>
+  </div>
+</div>
+
+<!-- PAGE HERO -->
 <section class="page-hero" id="page-hero" style="display:none;">
-  <div class="page-hero-orb"></div>
-  <a href="index.html" class="back-link"><span class="back-arrow">←</span> Back to Home</a>
-  <h1>Build Your <span class="grad">Custom Bot</span></h1>
-  <p>Design it live, select your commands, choose a package, then place your order — all in one place.</p>
+  <h1 class="page-hero-title">Build Your <span style="color:var(--blue)">Custom Bot</span></h1>
+  <p class="page-hero-sub">Choose your package, pick your commands, design it live — then place your order.</p>
+
   <div class="steps-nav" id="steps-nav">
     <button class="step-pill active" data-step="1" onclick="goStep(1)">
-      <span class="step-pill-num" id="pn1">1</span>Design
+      <span class="step-pill-num" id="pn1">1</span>Package
     </button>
     <button class="step-pill" data-step="2" onclick="goStep(2)">
       <span class="step-pill-num" id="pn2">2</span>Commands
     </button>
     <button class="step-pill" data-step="3" onclick="goStep(3)">
-      <span class="step-pill-num" id="pn3">3</span>Package
+      <span class="step-pill-num" id="pn3">3</span>Design
     </button>
     <button class="step-pill" data-step="4" onclick="goStep(4)">
       <span class="step-pill-num" id="pn4">4</span>Order
@@ -368,212 +386,243 @@ img{max-width:100%;}
   </div>
 </section>
 
+<!-- BUILDER -->
 <div class="builder-wrap" id="builder-wrap" style="display:none;">
 
-  <!-- LEFT -->
+  <!-- LEFT COLUMN -->
   <div class="builder-left">
 
-    <!-- STEP 1: DESIGN -->
+    <!-- ══ STEP 1: PACKAGE ══ -->
     <div class="step-panel active" id="step-1">
-
       <div class="build-card reveal">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Bot Identity</div><div class="build-card-sub">How it appears in Discord</div></div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Bot Name</label><input class="form-input" id="bot-name" type="text" placeholder="e.g. Georgia Utilities" oninput="updatePreview()"></div>
-          <div class="form-group"><label class="form-label">Status Text</label><input class="form-input" id="bot-status" type="text" placeholder="e.g. Watching the server" oninput="updatePreview()"></div>
-          <div class="form-group"><label class="form-label">Server Name</label><input class="form-input" id="server-name" type="text" placeholder="e.g. Georgia RP" oninput="updatePreview()"></div>
-          <div class="form-group"><label class="form-label">Embed Footer</label><input class="form-input" id="embed-footer" type="text" placeholder="e.g. Georgia Utilities • v1.0" oninput="updatePreview()"></div>
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Choose Your Package</div>
+          <div class="build-card-sub">Pricing in USD · Robux accepted too</div>
         </div>
+        <div class="pkg-grid" id="pkg-grid"></div>
       </div>
 
       <div class="build-card reveal" style="transition-delay:0.07s">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Embed Color</div><div class="build-card-sub">Accent color for all embeds</div></div>
-        <div class="color-row">
-          <div class="color-swatch selected" style="background:#6390ff" data-color="#6390ff" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#818cf8" data-color="#818cf8" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#22c55e" data-color="#22c55e" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#f59e0b" data-color="#f59e0b" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#ef4444" data-color="#ef4444" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#ec4899" data-color="#ec4899" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#06b6d4" data-color="#06b6d4" onclick="pickColor(this)"></div>
-          <div class="color-swatch" style="background:#a855f7" data-color="#a855f7" onclick="pickColor(this)"></div>
-          <div class="color-input-wrap">
-            <input type="color" id="custom-color" value="#6390ff" oninput="pickCustomColor(this)">
-            <span id="custom-color-hex">#6390ff</span>
-          </div>
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Add-Ons</div>
+          <div class="build-card-sub">Optional systems for your bot</div>
         </div>
-      </div>
-
-      <div class="build-card reveal" style="transition-delay:0.12s">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Bot Logo</div><div class="build-card-sub">Used as the bot avatar</div></div>
-        <div class="upload-area" id="logo-upload-area">
-          <input type="file" accept="image/*" onchange="handleLogoUpload(event)" id="logo-file-input">
-          <div id="logo-upload-default"><div class="upload-icon">🖼️</div><div class="upload-text">Click or drag to upload logo</div><div class="upload-sub">PNG, JPG, GIF — max 5MB</div></div>
-          <div class="upload-preview" id="logo-preview"><img id="logo-preview-img" src="" alt=""><span class="upload-preview-name" id="logo-preview-name"></span><button class="upload-preview-remove" onclick="removeLogo(event)">✕</button></div>
-        </div>
-      </div>
-
-      <div class="build-card reveal" style="transition-delay:0.16s">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Server Banner</div><div class="build-card-sub">Optional — shown in embed header</div></div>
-        <div class="upload-area" id="banner-upload-area">
-          <input type="file" accept="image/*" onchange="handleBannerUpload(event)" id="banner-file-input">
-          <div id="banner-upload-default"><div class="upload-icon">🏞️</div><div class="upload-text">Click or drag to upload banner</div><div class="upload-sub">PNG, JPG — 16:9 recommended</div></div>
-          <div class="upload-preview" id="banner-preview"><img id="banner-preview-img" src="" alt="" style="width:50px;height:32px;border-radius:5px;object-fit:cover;"><span class="upload-preview-name" id="banner-preview-name"></span><button class="upload-preview-remove" onclick="removeBanner(event)">✕</button></div>
-        </div>
+        <div id="extras-grid" class="extras-grid"></div>
       </div>
 
       <div class="step-btns">
+        <div></div>
         <button class="btn-next" onclick="goStep(2)">Continue to Commands →</button>
       </div>
     </div>
 
-    <!-- STEP 2: COMMANDS -->
+    <!-- ══ STEP 2: COMMANDS ══ -->
     <div class="step-panel" id="step-2">
       <div class="build-card reveal">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Command Selection</div><div class="build-card-sub">Pick every command you want</div></div>
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Command Selection</div>
+          <div class="build-card-sub">Pick every command you want</div>
+        </div>
+        <div id="pkg-included-note" class="pkg-included-note" style="display:none;">
+          <span>✅ <b id="pkg-included-count">0</b> commands already included in your package are checked off</span>
+          <span style="color:var(--yellow);">· 🪙 Extra commands = +100 Robux each</span>
+        </div>
         <div class="cmd-cats" id="cmd-cats"></div>
         <div class="cmd-grid" id="cmd-grid"></div>
-        <div class="cmd-selected-count"><strong id="cmd-count">0</strong> commands selected <span style="color:var(--gray);font-size:11px;">· click to toggle</span></div>
+        <div class="cmd-selected-count"><strong id="cmd-count">0</strong> extra commands selected <span style="color:var(--gray);font-size:11px;">· click to toggle · +100 Robux each</span></div>
       </div>
-      <div class="build-card reveal" style="transition-delay:0.07s">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Add-Ons</div><div class="build-card-sub">Optional systems for your bot</div></div>
-        <div class="extra-list" id="extra-list"></div>
-      </div>
+
       <div class="step-btns">
         <button class="btn-back" onclick="goStep(1)">← Back</button>
-        <button class="btn-next" onclick="goStep(3)">Continue to Package →</button>
+        <button class="btn-next" onclick="goStep(3)">Continue to Design →</button>
       </div>
     </div>
 
-    <!-- STEP 3: PACKAGE -->
+    <!-- ══ STEP 3: DESIGN ══ -->
     <div class="step-panel" id="step-3">
       <div class="build-card reveal">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Choose Your Package</div><div class="build-card-sub">Pricing in USD · Robux accepted too</div></div>
-        <div class="pkg-grid" id="pkg-grid"></div>
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Bot Identity</div>
+          <div class="build-card-sub">How it appears in Discord</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Bot Name</label>
+            <input class="form-input" id="bot-name" type="text" placeholder="e.g. Georgia Utilities" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status Text</label>
+            <input class="form-input" id="bot-status" type="text" placeholder="e.g. Watching the server" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Server Name</label>
+            <input class="form-input" id="server-name" type="text" placeholder="e.g. Georgia RP" oninput="updatePreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Embed Footer</label>
+            <input class="form-input" id="embed-footer" type="text" placeholder="e.g. Georgia Utilities • v1.0" oninput="updatePreview()">
+          </div>
+        </div>
       </div>
-      <div class="build-card reveal" style="transition-delay:0.07s">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Special Requests</div><div class="build-card-sub">Any custom logic or features?</div></div>
-        <div class="form-group"><label class="form-label">Notes / Custom Features</label><textarea class="form-textarea" id="extra-notes" placeholder="Describe any custom logic, special systems, or extra requirements for your bot..." oninput="updatePreview()"></textarea></div>
+
+      <div class="build-card reveal" style="transition-delay:0.05s">
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Embed Color</div>
+          <div class="build-card-sub">Accent color for all embeds</div>
+        </div>
+        <div class="color-row">
+          <div class="color-swatch selected" data-color="#6390ff" style="background:#6390ff;" onclick="pickColor(this)"><span class="color-check">✓</span></div>
+          <div class="color-swatch" data-color="#818cf8" style="background:#818cf8;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#22c55e" style="background:#22c55e;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#ec4899" style="background:#ec4899;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#06b6d4" style="background:#06b6d4;" onclick="pickColor(this)"></div>
+          <div class="color-swatch" data-color="#a855f7" style="background:#a855f7;" onclick="pickColor(this)"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:6px;">
+            <input type="color" id="custom-color" value="#6390ff" oninput="pickCustomColor(this)" style="width:30px;height:30px;border-radius:6px;border:none;cursor:pointer;padding:2px;background:transparent;">
+            <span id="custom-color-hex" style="font-size:12px;font-family:'JetBrains Mono';color:var(--gray-lt);">#6390ff</span>
+          </div>
+        </div>
       </div>
+
+      <div class="build-card reveal" style="transition-delay:0.1s">
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Bot Logo</div>
+          <div class="build-card-sub">Used as the bot avatar</div>
+        </div>
+        <div class="upload-area" id="logo-upload-area" onclick="document.getElementById('logo-file-input').click()">
+          <div id="logo-upload-default">
+            <div style="font-size:32px;margin-bottom:8px;">🖼️</div>
+            <div style="font-size:13px;font-weight:700;">Click to upload logo</div>
+            <div style="font-size:11px;color:var(--gray);margin-top:4px;">PNG / JPG · Max 5MB</div>
+          </div>
+          <div id="logo-preview" style="display:none;align-items:center;gap:12px;">
+            <img id="logo-preview-img" src="" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover;">
+            <div>
+              <div id="logo-preview-name" style="font-size:13px;font-weight:700;"></div>
+              <button onclick="removeLogo(event)" style="font-size:11px;color:var(--red);background:none;border:none;padding:0;cursor:pointer;margin-top:3px;">Remove</button>
+            </div>
+          </div>
+          <input type="file" id="logo-file-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+        </div>
+      </div>
+
+      <div class="build-card reveal" style="transition-delay:0.15s">
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Bot Banner</div>
+          <div class="build-card-sub">Shown on bot profile card</div>
+        </div>
+        <div class="upload-area" id="banner-upload-area" onclick="document.getElementById('banner-file-input').click()">
+          <div id="banner-upload-default">
+            <div style="font-size:32px;margin-bottom:8px;">🎨</div>
+            <div style="font-size:13px;font-weight:700;">Click to upload banner</div>
+            <div style="font-size:11px;color:var(--gray);margin-top:4px;">PNG / JPG · Wide format recommended · Max 5MB</div>
+          </div>
+          <div id="banner-preview" style="display:none;align-items:center;gap:12px;">
+            <img id="banner-preview-img" src="" alt="" style="width:80px;height:48px;border-radius:8px;object-fit:cover;">
+            <div>
+              <div id="banner-preview-name" style="font-size:13px;font-weight:700;"></div>
+              <button onclick="removeBanner(event)" style="font-size:11px;color:var(--red);background:none;border:none;padding:0;cursor:pointer;margin-top:3px;">Remove</button>
+            </div>
+          </div>
+          <input type="file" id="banner-file-input" accept="image/*" style="display:none;" onchange="handleBannerUpload(event)">
+        </div>
+      </div>
+
       <div class="step-btns">
         <button class="btn-back" onclick="goStep(2)">← Back</button>
         <button class="btn-next" onclick="goStep(4)">Continue to Order →</button>
       </div>
     </div>
 
-    <!-- STEP 4: ORDER -->
+    <!-- ══ STEP 4: ORDER ══ -->
     <div class="step-panel" id="step-4">
       <div class="build-card reveal">
-        <div class="build-card-head"><div class="build-card-dot"></div><div class="build-card-title">Your Information</div><div class="build-card-sub">How we'll contact you</div></div>
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Your Information</div>
+          <div class="build-card-sub">How we'll contact you</div>
+        </div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Discord Username</label><input class="form-input" id="disc-username" type="text" placeholder="e.g. yourname" oninput="updatePreview()"></div>
-          <div class="form-group"><label class="form-label">Discord User ID</label><input class="form-input" id="disc-id" type="text" placeholder="e.g. 123456789012345678" oninput="updatePreview()"></div>
-          <div class="form-group full"><label class="form-label">Server Invite Link</label><input class="form-input" id="server-invite" type="text" placeholder="https://discord.gg/..." oninput="updatePreview()"></div>
-          <div class="form-group"><label class="form-label">Payment Method</label>
-            <select class="form-select" id="payment-method" onchange="updatePreview()">
+          <div class="form-group">
+            <label class="form-label">Discord Username</label>
+            <input class="form-input" id="disc-username" type="text" placeholder="e.g. yourname">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Discord User ID</label>
+            <input class="form-input" id="disc-id" type="text" placeholder="e.g. 123456789012345678">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Server Invite Link</label>
+            <input class="form-input" id="server-invite" type="text" placeholder="https://discord.gg/...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select class="form-select" id="payment-method">
               <option value="">Select method...</option>
               <option>PayPal</option><option>Cash App</option><option>Venmo</option>
               <option>Robux (Game Pass)</option><option>Crypto</option>
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Preferred Timeline</label>
-            <select class="form-select" id="timeline" onchange="updatePreview()">
+          <div class="form-group">
+            <label class="form-label">Preferred Timeline</label>
+            <select class="form-select" id="timeline">
               <option value="">Select timeline...</option>
-              <option>ASAP (Rush +$5)</option><option>1–3 Days</option>
-              <option>3–7 Days</option><option>Flexible</option>
+              <option>ASAP (1–2 days, +$5)</option>
+              <option>Standard (3–5 days)</option>
+              <option>Relaxed (1 week)</option>
             </select>
           </div>
-          <div class="form-group full"><label class="form-label">Final Notes</label><textarea class="form-textarea" id="order-notes" placeholder="Any final questions, notes, or info for our team..." style="min-height:68px;"></textarea></div>
+          <div class="form-group full">
+            <label class="form-label">Notes / Custom Features</label>
+            <textarea class="form-textarea" id="order-notes" placeholder="Any special requirements, custom logic, or extra details..."></textarea>
+          </div>
         </div>
       </div>
+
+      <!-- Price Estimate -->
+      <div class="build-card reveal" style="transition-delay:0.05s">
+        <div class="build-card-head">
+          <div class="build-card-dot"></div>
+          <div class="build-card-title">Order Summary</div>
+          <div class="build-card-sub">Review before placing</div>
+        </div>
+        <div class="price-estimate">
+          <div class="price-estimate-row"><span class="key">Package</span><span class="val" id="sum-package">Not selected</span></div>
+          <div class="price-estimate-row"><span class="key">Included commands</span><span class="val" id="sum-included-cmds" style="color:var(--green);">0</span></div>
+          <div class="price-estimate-row"><span class="key">Extra commands (×100 Robux)</span><span class="val" id="sum-extra-cmds" style="color:var(--yellow);">0</span></div>
+          <div class="price-estimate-row"><span class="key">Add-Ons</span><span class="val" id="sum-extras">None</span></div>
+          <div class="price-estimate-divider"></div>
+          <div class="price-estimate-row"><span class="key">Est. USD</span><span class="val price-estimate-total" id="sum-usd">$—</span></div>
+          <div class="price-estimate-row"><span class="key">Est. Robux</span><span class="val price-estimate-total" id="sum-robux" style="color:#f59e0b;">—</span></div>
+        </div>
+
+        <div style="margin-top:18px;">
+          <button class="btn-next" id="submit-btn" onclick="submitOrder()" style="width:100%;padding:16px;font-size:16px;">🚀 Place Order</button>
+        </div>
+      </div>
+
       <div class="step-btns">
         <button class="btn-back" onclick="goStep(3)">← Back</button>
-        <button class="btn-next" id="submit-btn" onclick="submitOrder()">🚀 Place Order</button>
-      </div>
-    </div>
-
-    <!-- SUCCESS -->
-    <div class="success-panel" id="success-panel">
-      <div class="success-icon">✅</div>
-      <div class="success-title">Order <span style="color:var(--blue)">Received!</span></div>
-      <div class="success-sub">Your order has been sent to our team. We'll reach out on Discord within a few hours.</div>
-      <div class="success-ticket" id="success-ticket"></div>
-      <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer" style="display:inline-block;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;box-shadow:0 0 28px var(--blue-glow);">Join Our Discord ↗</a>
-      <div style="margin-top:16px;">
-        <button onclick="openReview()" style="padding:13px 28px;border-radius:11px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--yellow);font-weight:700;font-size:14px;font-family:'Outfit';">⭐ Leave a Review</button>
+        <div></div>
       </div>
     </div>
 
   </div><!-- /builder-left -->
 
-<!-- ── Review Modal ─────────────────────── -->
-<div class="review-overlay" id="review-overlay">
-  <div class="review-modal">
-    <div id="review-form-view">
-      <div class="review-modal-top">
-        <div class="review-confetti">⭐</div>
-        <div class="review-modal-title">Leave a Review</div>
-        <div class="review-modal-sub">How was your experience with Exotic Utilities?</div>
-      </div>
-      <div class="review-modal-body">
-        <!-- User row -->
-        <div class="review-user-row" id="review-user-row">
-          <div class="review-avatar-initials" id="review-avatar">?</div>
-          <div>
-            <div class="review-username" id="review-username">Loading...</div>
-            <div class="review-usertag" id="review-usertag"></div>
-          </div>
-          <div class="review-discord-badge">
-            <svg width="13" height="10" viewBox="0 0 24 18" fill="#7289da"><path d="M20.317 1.492a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037 13.7 13.7 0 0 0-.608 1.25 18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 1.492a.07.07 0 0 0-.032.027C.533 6.168-.32 10.698.099 15.175c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.1.246.198.373.292a.077.077 0 0 1-.006.127c-.598.35-1.22.645-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.656a.061.061 0 0 0-.031-.03z"/></svg>
-            Discord
-          </div>
-        </div>
-
-        <!-- Star rating -->
-        <div class="stars-label">Your Rating</div>
-        <div class="stars-row" id="stars-row">
-          <button class="star-btn" data-val="1" onclick="setStar(1)">⭐</button>
-          <button class="star-btn" data-val="2" onclick="setStar(2)">⭐</button>
-          <button class="star-btn" data-val="3" onclick="setStar(3)">⭐</button>
-          <button class="star-btn" data-val="4" onclick="setStar(4)">⭐</button>
-          <button class="star-btn" data-val="5" onclick="setStar(5)">⭐</button>
-        </div>
-        <div class="stars-desc" id="stars-desc">Click a star to rate</div>
-
-        <!-- Order summary -->
-        <div class="review-order-summary" id="review-order-summary" style="display:none;">
-          <div class="review-order-label">Your Order</div>
-          <div class="review-order-items" id="review-order-items"></div>
-        </div>
-
-        <!-- Review text -->
-        <textarea class="review-textarea" id="review-text" placeholder="Tell us about your experience — what did you love? What was the bot like?" maxlength="500" oninput="updateCharCount()"></textarea>
-        <div class="review-char-count"><span id="review-char">0</span>/500</div>
-
-        <div class="review-footer">
-          <button class="review-skip" onclick="closeReview()">Maybe Later</button>
-          <button class="review-submit" id="review-submit-btn" onclick="submitReview()" disabled>Submit Review</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sent state -->
-    <div id="review-sent-view" style="display:none;">
-      <div class="review-sent">
-        <div class="review-sent-icon">🎉</div>
-        <div class="review-sent-title">Thanks for the review!</div>
-        <div class="review-sent-sub">Your feedback means a lot to us. It's been posted to our Discord.</div>
-        <button onclick="closeReview()" style="margin-top:24px;padding:12px 28px;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;font-weight:700;border:none;font-family:'Outfit';font-size:14px;">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-  <!-- RIGHT: PREVIEW -->
+  <!-- RIGHT COLUMN: PREVIEW -->
   <div class="preview-panel">
     <div class="preview-label">Live Preview</div>
 
-    <!-- Bot Profile -->
+    <!-- Bot Profile Card -->
     <div class="bot-profile-card reveal">
       <div class="bot-profile-banner" id="prev-banner-bg">
         <img class="bot-profile-banner-img" id="prev-banner-img" src="" alt="">
@@ -590,7 +639,7 @@ img{max-width:100%;}
           <div class="bot-profile-tag" id="prev-bot-status">No status set</div>
           <div class="bot-profile-badge">🤖 BOT</div>
         </div>
-        <div class="bot-cmds-preview" id="prev-cmds"></div>
+        <div class="prev-cmd-ticker" id="prev-cmd-ticker">Waiting for commands...</div>
       </div>
     </div>
 
@@ -603,60 +652,116 @@ img{max-width:100%;}
         <span style="font-size:11px;color:#72767d;margin-left:9px;font-family:Outfit">Discord — <span id="prev-server-name">Your Server</span></span>
       </div>
       <div class="dc-body">
-        <div class="discord-sidebar">
-          <div class="discord-sidebar-item active" id="prev-sidebar-icon">🤖</div>
-          <div class="discord-sidebar-item" style="font-size:13px;color:#72767d">#</div>
-          <div class="discord-sidebar-item" style="font-size:13px;color:#72767d">⚙</div>
+        <div class="dc-sidebar">
+          <div class="dc-sidebar-icon" id="prev-sidebar-icon" style="background:var(--blue-dim)">🤖</div>
+          <div class="dc-sidebar-icon" style="background:#2f3136;">#</div>
+          <div class="dc-sidebar-icon" style="background:#2f3136;">⚙️</div>
         </div>
-        <div class="discord-main">
-          <div class="discord-channel-bar">
-            <span class="discord-channel-icon">#</span>
-            <span class="discord-channel-name">bot-commands</span>
+        <div class="dc-main">
+          <div class="dc-channel"># bot-commands</div>
+          <div class="dc-messages" id="prev-messages">
+            <div class="dc-msg">
+              <div class="dc-msg-avatar" style="background:var(--blue-dim)">🤖</div>
+              <div class="dc-msg-body">
+                <span class="dc-msg-name" id="prev-msg-name" style="color:var(--blue)">Your Bot</span>
+                <div class="dc-msg-text">Use <code>/commands</code> to see all available commands.</div>
+              </div>
+            </div>
           </div>
-          <div class="discord-messages" id="prev-messages"></div>
+          <div id="discord-embed" style="margin:0 10px 10px 50px;"></div>
         </div>
       </div>
     </div>
 
-    <!-- Order Summary -->
-    <div class="order-summary reveal" style="transition-delay:0.18s">
-      <div class="order-summary-head">Order Summary</div>
-      <div class="order-summary-body">
-        <div class="order-row"><span class="order-row-key">Package</span><span class="order-row-val blue" id="sum-package">Not selected</span></div>
-        <div class="order-divider"></div>
-        <div class="order-row"><span class="order-row-key">Commands</span><span class="order-row-val" id="sum-cmds">0 selected</span></div>
-        <div class="order-row"><span class="order-row-key">Add-Ons</span><span class="order-row-val" id="sum-extras">None</span></div>
-        <div class="order-row"><span class="order-row-key">Timeline</span><span class="order-row-val" id="sum-timeline">—</span></div>
-        <div class="order-divider"></div>
-        <div class="order-row"><span class="order-row-key">Est. Price</span><span class="order-row-val blue" id="sum-price">—</span></div>
-      </div>
+    <!-- Sidebar preview -->
+    <div class="preview-sidebar-card reveal" style="transition-delay:0.15s;margin-top:12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Selected Package</div>
+      <div id="prev-sidebar-pkg" style="font-size:14px;font-weight:700;color:var(--blue);">None selected</div>
+      <div id="prev-sidebar-price" style="font-size:12px;color:var(--gray-lt);margin-top:3px;">Pick a package to see pricing</div>
+      <div id="prev-sidebar-features" style="margin-top:10px;font-size:12px;color:var(--gray-lt);line-height:1.8;"></div>
     </div>
-
   </div>
+
 </div><!-- /builder-wrap -->
 
-<footer class="footer">
-  <div class="footer-logo">
-    <div class="footer-logo-icon"><img src="logo.png" alt="EU"></div>
-    <span class="footer-copy">© 2025 Exotic Utilities</span>
+<!-- SUCCESS PANEL -->
+<div class="success-panel" id="success-panel">
+  <div class="success-icon">✅</div>
+  <div class="success-title">Order Placed!</div>
+  <div class="success-sub">We'll reach out on Discord within 24 hours. Your config file has been sent to our team.</div>
+  <div class="success-ticket" id="success-ticket"></div>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
+    <a href="dashboard.html" class="btn-primary" style="text-decoration:none;">View Dashboard →</a>
+    <button onclick="openReview()" style="padding:13px 28px;border-radius:11px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--yellow);font-weight:700;font-size:14px;font-family:'Outfit';">⭐ Leave a Review</button>
   </div>
-  <div class="footer-links">
-    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Discord</a>
-    <a href="index.html">Home</a>
-    <a href="showcase.html">Showcase</a>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="https://discord.gg/tfvNFNmHMY" target="_blank" rel="noreferrer">Contact</a>
+</div>
+
+<!-- REVIEW OVERLAY -->
+<div class="review-overlay" id="review-overlay">
+  <div class="review-modal">
+    <div id="review-form-view">
+      <div class="review-modal-top">
+        <div class="review-confetti">🎉</div>
+        <div class="review-modal-title">Leave a Review</div>
+        <div class="review-modal-sub">How was your experience with Exotic Utilities?</div>
+      </div>
+      <div class="review-modal-body">
+        <div class="review-user-row" id="review-user-row">
+          <div class="review-avatar" id="review-avatar">EU</div>
+          <div>
+            <div class="review-username" id="review-username">Loading...</div>
+            <div class="review-usertag" id="review-usertag">@discord</div>
+          </div>
+          <div class="review-discord-badge">🔵 Discord</div>
+        </div>
+
+        <div id="review-order-summary" style="display:none;">
+          <div class="review-order-label">Your Order</div>
+          <div class="review-order-items" id="review-order-items"></div>
+        </div>
+
+        <div class="stars-label" style="margin-top:16px;">Your Rating</div>
+        <div class="stars-row" id="stars-row">
+          <button class="star-btn" onclick="setStar(1)">⭐</button>
+          <button class="star-btn" onclick="setStar(2)">⭐</button>
+          <button class="star-btn" onclick="setStar(3)">⭐</button>
+          <button class="star-btn" onclick="setStar(4)">⭐</button>
+          <button class="star-btn" onclick="setStar(5)">⭐</button>
+        </div>
+        <div class="stars-desc" id="stars-desc">Click a star to rate</div>
+
+        <textarea class="review-textarea" id="review-text" placeholder="Tell us about your experience — what did you love? what could be better?" maxlength="500" oninput="updateCharCount()"></textarea>
+        <div class="review-char-count"><span id="review-char">0</span>/500</div>
+
+        <div class="review-footer">
+          <button class="review-skip" onclick="closeReview()">Maybe Later</button>
+          <button class="review-submit" id="review-submit-btn" onclick="submitReview()" disabled>Submit Review</button>
+        </div>
+      </div>
+    </div>
+    <div id="review-sent-view" style="display:none;">
+      <div class="review-sent">
+        <div class="review-sent-icon">🌟</div>
+        <div class="review-sent-title">Thank you!</div>
+        <div class="review-sent-sub">Your review helps us grow and improve. We appreciate the feedback!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="logo.png" alt="" style="width:24px;height:24px;border-radius:5px;">
+      <span style="font-weight:700;">Exotic Utilities</span>
+    </div>
+    <span style="font-size:12px;color:var(--gray);cursor:pointer;" onclick="secretClick()">© 2025 Exotic Utilities. All rights reserved.</span>
   </div>
 </footer>
-
 <script>
 
-
-
-
-
 /* ═══════════════════════════════════════
-   CONSTANTS & CONFIG
+   CONFIG
 ═══════════════════════════════════════ */
 const ORDER_WEBHOOK  = "https://discord.com/api/webhooks/1480715326663426058/Q8eWvzJpra9Fg4UBjC1QmC3xTIo9skm-ySQkO8wNrvctV8A_9xbL8GVRBZQ_sc7pjbNA";
 const REVIEW_WEBHOOK = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
@@ -665,47 +770,116 @@ const JBIN_BASE      = "https://api.jsonbin.io/v3";
 const SPAM_KEY       = "eu_last_order";
 const SPAM_WINDOW    = 30 * 60 * 1000;
 
+/* ═══════════════════════════════════════
+   DATA
+═══════════════════════════════════════ */
 const ALL_COMMANDS = [
+  /* MODERATION */
   {name:"/ban",cat:"moderation"},{name:"/unban",cat:"moderation"},{name:"/kick",cat:"moderation"},
   {name:"/mute",cat:"moderation"},{name:"/unmute",cat:"moderation"},{name:"/timeout",cat:"moderation"},
   {name:"/untimeout",cat:"moderation"},{name:"/warn",cat:"moderation"},{name:"/warnings",cat:"moderation"},
   {name:"/clearwarns",cat:"moderation"},{name:"/purge",cat:"moderation"},{name:"/lock",cat:"moderation"},
   {name:"/unlock",cat:"moderation"},{name:"/slowmode",cat:"moderation"},{name:"/role",cat:"moderation"},
   {name:"/nick",cat:"moderation"},{name:"/nuke",cat:"moderation"},{name:"/banlist",cat:"moderation"},
+  {name:"/massban",cat:"moderation"},{name:"/softban",cat:"moderation"},{name:"/tempban",cat:"moderation"},
+  {name:"/deafen",cat:"moderation"},{name:"/undeafen",cat:"moderation"},{name:"/move",cat:"moderation"},
+  {name:"/voicekick",cat:"moderation"},{name:"/lockserver",cat:"moderation"},{name:"/unlockserver",cat:"moderation"},
+  /* INFRACTIONS */
   {name:"/infract",cat:"infractions"},{name:"/infraction-view",cat:"infractions"},
   {name:"/infraction-revoke",cat:"infractions"},{name:"/infraction-wipe",cat:"infractions"},
+  {name:"/suspend",cat:"infractions"},{name:"/loa",cat:"infractions"},{name:"/activity-check",cat:"infractions"},
+  {name:"/strike",cat:"infractions"},{name:"/strike-leaderboard",cat:"infractions"},
+  {name:"/appeal",cat:"infractions"},{name:"/case",cat:"infractions"},
+  /* SESSIONS */
   {name:"/sessionstartup",cat:"sessions"},{name:"/sessionshutdown",cat:"sessions"},
   {name:"/sessionfull",cat:"sessions"},{name:"/sessionvote",cat:"sessions"},
+  {name:"/patrol-start",cat:"sessions"},{name:"/patrol-end",cat:"sessions"},
+  {name:"/shift-start",cat:"sessions"},{name:"/shift-end",cat:"sessions"},
+  /* STAFF */
   {name:"/promote",cat:"staff"},{name:"/demote",cat:"staff"},{name:"/stafflist",cat:"staff"},
-  {name:"/strike-leaderboard",cat:"staff"},
-  {name:"/setup-tickets",cat:"tickets"},{name:"/close",cat:"tickets"},{name:"/closerequest",cat:"tickets"},
-  {name:"/add",cat:"tickets"},{name:"/addadmin",cat:"tickets"},{name:"/addsupport",cat:"tickets"},
+  {name:"/verify",cat:"staff"},{name:"/setrank",cat:"staff"},{name:"/staff-stats",cat:"staff"},
+  {name:"/co-host",cat:"staff"},{name:"/host",cat:"staff"},
+  /* TICKETS */
+  {name:"/setup-tickets",cat:"tickets"},{name:"/close",cat:"tickets"},
+  {name:"/closerequest",cat:"tickets"},{name:"/add",cat:"tickets"},
+  {name:"/addadmin",cat:"tickets"},{name:"/addsupport",cat:"tickets"},
+  {name:"/ticket-rename",cat:"tickets"},{name:"/ticket-transfer",cat:"tickets"},
+  /* UTILITY */
   {name:"/ping",cat:"utility"},{name:"/avatar",cat:"utility"},{name:"/banner",cat:"utility"},
   {name:"/userinfo",cat:"utility"},{name:"/serverinfo",cat:"utility"},{name:"/membercount",cat:"utility"},
   {name:"/embed",cat:"utility"},{name:"/say",cat:"utility"},{name:"/stealemoji",cat:"utility"},
-  {name:"/whois",cat:"utility"},{name:"/commands",cat:"utility"},
-  {name:"/rank",cat:"xp"},{name:"/leaderboard",cat:"xp"},
-  {name:"/announce",cat:"admin"},{name:"/dm",cat:"admin"},{name:"/roleall",cat:"admin"},{name:"/config",cat:"admin"},
-  {name:"/players",cat:"erlc"},{name:"/server",cat:"erlc"},
-]
-
+  {name:"/whois",cat:"utility"},{name:"/commands",cat:"utility"},{name:"/poll",cat:"utility"},
+  {name:"/remind",cat:"utility"},{name:"/giveaway",cat:"utility"},{name:"/announce",cat:"utility"},
+  /* XP */
+  {name:"/rank",cat:"xp"},{name:"/leaderboard",cat:"xp"},{name:"/xp-set",cat:"xp"},
+  {name:"/xp-reset",cat:"xp"},{name:"/xp-give",cat:"xp"},{name:"/xp-take",cat:"xp"},
+  /* ADMIN */
+  {name:"/dm",cat:"admin"},{name:"/roleall",cat:"admin"},{name:"/config",cat:"admin"},
+  {name:"/backup",cat:"admin"},{name:"/restore",cat:"admin"},{name:"/automod",cat:"admin"},
+  {name:"/antiraid",cat:"admin"},{name:"/audit",cat:"admin"},
+  /* ERLC */
+  {name:"/players",cat:"erlc"},{name:"/server",cat:"erlc"},{name:"/joinvc",cat:"erlc"},
+  {name:"/erlc-ban",cat:"erlc"},{name:"/erlc-unban",cat:"erlc"},{name:"/erlc-kick",cat:"erlc"},
+  {name:"/erlc-bans",cat:"erlc"},{name:"/erlc-staff",cat:"erlc"},{name:"/erlc-queue",cat:"erlc"},
+  {name:"/erlc-message",cat:"erlc"},{name:"/erlc-hint",cat:"erlc"},{name:"/erlc-command",cat:"erlc"},
+  {name:"/erlc-log",cat:"erlc"},{name:"/erlc-stats",cat:"erlc"},{name:"/link-roblox",cat:"erlc"},
+  {name:"/mod-panel",cat:"erlc"},{name:"/player-info",cat:"erlc"},{name:"/sync-ranks",cat:"erlc"},
+];
 const CMD_CATS = ["all","moderation","infractions","sessions","staff","tickets","utility","xp","admin","erlc"];
-
 const EXTRAS = [
-  {id:"tickets",name:"Full Ticket System",desc:"Dropdown panel, auto transcripts, claim & close flow",badge:"+$5"},
-  {id:"erlc",name:"ERLC Live Integration",desc:"Live player lists & server data from ERLC API",badge:"+$8"},
-  {id:"xp",name:"XP & Leveling System",desc:"Auto XP, level-up announcements, rank cards",badge:"+$3"},
-  {id:"boost",name:"Boost Rewards",desc:"Auto-detect Nitro boosts, assign roles & announce",badge:"+$3"},
-  {id:"vc",name:"VC Office System",desc:"Private VC offices for server boosters",badge:"+$3"},
-  {id:"verify",name:"Verification System",desc:"Gate your server with auto role assignment",badge:"+$4"},
-  {id:"logs",name:"Advanced Logging",desc:"Full audit log: joins, leaves, edits, deletes",badge:"+$3"},
-]
-
+  {id:"tickets",name:"Full Ticket System",desc:"Dropdown panel, auto transcripts, claim & close flow",badge:"+$5",robux:500},
+  {id:"erlc",name:"ERLC Live Integration",desc:"Live player lists, server data & API moderation panel",badge:"+$8",robux:800},
+  {id:"xp",name:"XP & Leveling System",desc:"Auto XP, level-up announcements, rank cards",badge:"+$3",robux:300},
+  {id:"boost",name:"Boost Rewards",desc:"Auto-detect Nitro boosts, assign roles & announce",badge:"+$3",robux:300},
+  {id:"vc",name:"VC Office System",desc:"Private VC offices for server boosters",badge:"+$3",robux:300},
+  {id:"verify",name:"Verification System",desc:"Gate your server with auto role assignment",badge:"+$4",robux:400},
+  {id:"logs",name:"Advanced Logging",desc:"Full audit log: joins, leaves, edits, deletes",badge:"+$3",robux:300},
+];
 const PACKAGES = [
-  {id:"basic",icon:"⚡",name:"Basic",price:"$5–$10",robux:"500–1K",desc:"Essential mod + sessions",popular:false},
-  {id:"advanced",icon:"🔥",name:"Advanced",price:"$15–$25",robux:"1.5K–2.5K",desc:"Tickets + full systems",popular:true},
-  {id:"elite",icon:"👑",name:"Elite",price:"$30–$50",robux:"3K–5K",desc:"Full custom everything",popular:false},
-]
+  {
+    id:"basic", icon:"⚡", name:"Basic", price:"$5–$10", robux:"500–1K",
+    baseUsdMin:5, baseUsdMax:10, baseRbx:750,
+    desc:"Essential mod, sessions & XP — perfect to start",
+    popular:false,
+    includedCmds:["/ban","/unban","/kick","/mute","/unmute","/timeout","/untimeout",
+      "/warn","/warnings","/clearwarns","/purge","/lock","/unlock","/slowmode",
+      "/role","/nick","/say","/ping","/membercount","/rank","/leaderboard",
+      "/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote",
+      "/avatar","/serverinfo","/userinfo","/embed"],
+    includedExtras:["xp"],
+    features:["Moderation System","Warning System","Channel Management",
+               "XP & Leveling","Session Announcements","Utility Commands"]
+  },
+  {
+    id:"advanced", icon:"🔥", name:"Advanced", price:"$15–$25", robux:"1.5K–2.5K",
+    baseUsdMin:15, baseUsdMax:25, baseRbx:2000,
+    desc:"Tickets, infractions, staff management — the full mod suite",
+    popular:true,
+    includedCmds:["/ban","/unban","/kick","/mute","/unmute","/timeout","/untimeout",
+      "/warn","/warnings","/clearwarns","/purge","/lock","/unlock","/slowmode","/role","/nick",
+      "/setup-tickets","/close","/closerequest","/add","/addadmin","/addsupport",
+      "/infract","/infraction-view","/infraction-revoke","/infraction-wipe",
+      "/promote","/demote","/suspend","/loa","/activity-check",
+      "/strike","/strike-leaderboard","/stafflist","/verify",
+      "/sessionstartup","/sessionshutdown","/sessionfull","/sessionvote",
+      "/rank","/leaderboard","/ping","/avatar","/userinfo","/serverinfo",
+      "/embed","/say","/membercount","/announce","/dm"],
+    includedExtras:["xp","tickets"],
+    features:["Everything in Basic","Full Ticket System","Infraction System",
+               "Staff Management","Strike Leaderboard","Session System"]
+  },
+  {
+    id:"premium", icon:"💎", name:"Premium", price:"$30+", robux:"3K+",
+    baseUsdMin:30, baseUsdMax:50, baseRbx:3500,
+    desc:"Fully custom — ERLC integration, moderation dashboard, everything",
+    popular:false,
+    includedCmds:["all"],
+    includedExtras:["xp","tickets","erlc","boost","vc","verify","logs"],
+    features:["Everything in Advanced","ERLC Live Integration","Moderation Dashboard",
+               "VC Office System","Boost Rewards","Verification System",
+               "Advanced Logging","Full Custom Branding"]
+  },
+];
 
 /* ═══════════════════════════════════════
    STATE
@@ -715,21 +889,20 @@ const state = {
   color: "#6390ff",
   logoUrl: null, logoFile: null,
   bannerUrl: null, bannerFile: null,
-  selectedCmds: new Set(),
+  selectedCmds: new Set(),      // only EXTRA (non-included) cmds user picked
   selectedExtras: new Set(),
   selectedPkg: null,
-  cmdCat: "all"
+  cmdCat: "all",
+  cmdTicker: 0,
+  cmdTickerTimer: null
 };
 
 /* ═══════════════════════════════════════
    JSONBIN HELPERS
 ═══════════════════════════════════════ */
 async function getBinId() {
-  // 1. Fast path: cached locally
   let id = localStorage.getItem("eu_bin_id");
   if (id) return id;
-
-  // 2. Search for existing bin by name
   try {
     const searchRes = await fetch(JBIN_BASE + "/b/search?query=eu-orders", {
       headers: { "X-Master-Key": JBIN_KEY }
@@ -737,28 +910,24 @@ async function getBinId() {
     if (searchRes.ok) {
       const searchData = await searchRes.json();
       const bins = searchData.items || searchData.result || searchData.records || [];
-      const match = bins.find && bins.find(b =>
-        (b.name && b.name === "eu-orders") ||
-        (b.snippet && b.snippet.includes("eu-orders")) ||
-        (b.metadata && b.metadata.name === "eu-orders")
+      const match = Array.isArray(bins) && bins.find(b =>
+        (b.name && b.name === "eu-orders") || (b.metadata && b.metadata.name === "eu-orders")
       );
       if (match) {
-        id = (match.id || (match.metadata && match.metadata.id));
+        id = match.id || (match.metadata && match.metadata.id);
         if (id) { localStorage.setItem("eu_bin_id", id); return id; }
       }
     }
-  } catch(e) { /* search not available */ }
-
-  // 3. Create new bin only if truly none exists (first ever use)
+  } catch(e) {}
   try {
     const res = await fetch(JBIN_BASE + "/b", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Master-Key": JBIN_KEY, "X-Bin-Name": "eu-orders", "X-Private": "false" },
-      body: JSON.stringify({ orders: [] })
+      headers: {"Content-Type":"application/json","X-Master-Key":JBIN_KEY,"X-Bin-Name":"eu-orders","X-Private":"false"},
+      body: JSON.stringify({orders:[]})
     });
     const data = await res.json();
     id = data.metadata && data.metadata.id;
-    if (id) { localStorage.setItem("eu_bin_id", id); }
+    if (id) localStorage.setItem("eu_bin_id", id);
   } catch(e) { console.error("Bin create failed", e); }
   return id;
 }
@@ -787,32 +956,28 @@ async function jbinWrite(orders) {
 
 async function jbinAddOrder(order) {
   const lean = Object.assign({}, order);
-  if (lean.logo && lean.logo.dataUrl)   lean.logo   = {name: lean.logo.name,   type: lean.logo.type};
-  if (lean.banner && lean.banner.dataUrl) lean.banner = {name: lean.banner.name, type: lean.banner.type};
+  if (lean.logo && lean.logo.dataUrl) lean.logo = {name:lean.logo.name, type:lean.logo.type};
+  if (lean.banner && lean.banner.dataUrl) lean.banner = {name:lean.banner.name, type:lean.banner.type};
   const orders = await jbinRead();
   orders.unshift(lean);
   await jbinWrite(orders);
 }
 
 /* ═══════════════════════════════════════
-   AUTH CHECK — runs on page load
+   AUTH
 ═══════════════════════════════════════ */
 function checkAuth() {
   const userStr = localStorage.getItem("eu_discord_user");
   const user = userStr ? JSON.parse(userStr) : null;
-
   if (!user || !user.id) {
     document.getElementById("auth-gate").style.display = "flex";
     return;
   }
-
-  // Logged in — show builder
   document.getElementById("page-hero").style.display = "";
   document.getElementById("builder-wrap").style.display = "";
   const footer = document.querySelector(".footer");
   if (footer) footer.style.display = "";
 
-  // Show user bar
   const bar = document.getElementById("auth-user-bar");
   const displayName = user.global_name || user.username;
   const emailEl = document.getElementById("auth-user-email");
@@ -825,22 +990,33 @@ function checkAuth() {
     if (left) left.prepend(avatarEl);
   }
   if (bar) bar.classList.add("show");
-
   window._currentUser = {
-    id: user.id,
-    username: user.username,
-    discord: user.username,
-    email: user.email || "",
-    displayName
+    id: user.id, username: user.username, discord: user.username,
+    email: user.email || "", displayName
   };
+}
+
+/* ═══════════════════════════════════════
+   HELPERS: get included cmds for pkg
+═══════════════════════════════════════ */
+function getPkgIncludedCmds() {
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  if (!pkg) return new Set();
+  if (pkg.includedCmds[0] === "all") return new Set(ALL_COMMANDS.map(c => c.name));
+  return new Set(pkg.includedCmds);
+}
+function getPkgIncludedExtras() {
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  return pkg ? new Set(pkg.includedExtras) : new Set();
 }
 
 /* ═══════════════════════════════════════
    STEP NAV
 ═══════════════════════════════════════ */
 function init() {
-  renderCmdCats(); renderCmds(); renderExtras(); renderPackages();
+  renderPackages(); renderExtras(); renderCmdCats(); renderCmds();
   buildDiscordEmbed(); updatePreview(); observeReveals();
+  startCmdTicker();
 }
 
 function goStep(n) {
@@ -855,39 +1031,163 @@ function goStep(n) {
     const num = document.getElementById("pn" + ps);
     if (num) num.textContent = ps < n ? "✓" : ps;
   });
+  if (n === 2) renderCmds();
   if (n === 4) updateOrderSummary();
   const hero = document.querySelector(".page-hero");
   if (hero) window.scrollTo({top: hero.offsetTop - 80, behavior:"smooth"});
   setTimeout(() => observeReveals(), 120);
 }
 
-function updateOrderSummary() {
+/* ═══════════════════════════════════════
+   PACKAGES
+═══════════════════════════════════════ */
+function renderPackages() {
+  document.getElementById("pkg-grid").innerHTML = PACKAGES.map(p => `
+    <div class="pkg-card${state.selectedPkg===p.id?" selected":""}${p.popular?" popular":""}" onclick="selectPkg('${p.id}')">
+      ${p.popular ? '<div class="pkg-card-pop">Most Popular</div>' : ''}
+      <div class="pkg-icon">${p.icon}</div>
+      <div class="pkg-name">${p.name}</div>
+      <div class="pkg-price">${p.price}</div>
+      <div class="pkg-robux">${p.robux} Robux</div>
+      <div class="pkg-desc">${p.desc}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--gray-lt);text-align:left;line-height:1.7;">
+        ${p.features.slice(0,4).map(f=>`✓ ${f}`).join('<br>')}
+        ${p.features.length>4 ? `<br><span style="color:var(--blue)">+${p.features.length-4} more...</span>` : ''}
+      </div>
+    </div>`).join("");
+}
+
+function selectPkg(id) {
+  state.selectedPkg = id;
+  // Auto-deselect extras that are now included in the package
+  const included = getPkgIncludedExtras();
+  included.forEach(eid => state.selectedExtras.delete(eid));
+  renderPackages(); renderExtras(); renderCmds();
+  updatePreview(); updatePkgSidebar();
+}
+
+function updatePkgSidebar() {
   const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
-  const el_pkg  = document.getElementById("sum-package");
-  const el_cmds = document.getElementById("sum-cmds");
-  const el_ext  = document.getElementById("sum-extras");
-  const el_time = document.getElementById("sum-timeline");
-  const el_price= document.getElementById("sum-price");
-  if (el_pkg)  el_pkg.textContent  = pkg ? pkg.name : "Not selected";
-  if (el_cmds) el_cmds.textContent = state.selectedCmds.size + " selected";
-  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id===id)?.name).filter(Boolean);
-  if (el_ext)  el_ext.textContent  = extrasArr.length ? extrasArr.join(", ") : "None";
-  const timeline = (document.getElementById("timeline") || {}).value || "—";
-  if (el_time) el_time.textContent = timeline;
-  if (el_price) {
-    let price = pkg ? pkg.price : "—";
-    const addonTotal = extrasArr.reduce((s,_,i) => {
-      const ex = Array.from(state.selectedExtras)[i];
-      const e = EXTRAS.find(x=>x.id===ex);
-      return s + (e ? parseInt(e.badge.replace(/[^0-9]/g,""))||0 : 0);
-    }, 0);
-    if (addonTotal > 0) price += " + $" + addonTotal;
-    el_price.textContent = price;
+  const el = document.getElementById("prev-sidebar-pkg");
+  const priceEl = document.getElementById("prev-sidebar-price");
+  const featEl = document.getElementById("prev-sidebar-features");
+  if (!pkg) {
+    if (el) el.textContent = "None selected";
+    if (priceEl) priceEl.textContent = "Pick a package to see pricing";
+    if (featEl) featEl.innerHTML = "";
+    return;
   }
+  if (el) el.textContent = pkg.icon + " " + pkg.name;
+  if (priceEl) priceEl.textContent = pkg.price + " / " + pkg.robux + " Robux";
+  if (featEl) featEl.innerHTML = pkg.features.map(f => `✓ ${f}`).join("<br>");
 }
 
 /* ═══════════════════════════════════════
-   COLOR
+   EXTRAS (ADD-ONS)
+═══════════════════════════════════════ */
+function renderExtras() {
+  const pkgIncluded = getPkgIncludedExtras();
+  document.getElementById("extras-grid").innerHTML = EXTRAS.map(ex => {
+    const isIncluded = pkgIncluded.has(ex.id);
+    const isSelected = !isIncluded && state.selectedExtras.has(ex.id);
+    let cls = "extra-card";
+    if (isIncluded) cls += " included";
+    else if (isSelected) cls += " selected";
+    const clickHandler = isIncluded ? "" : `onclick="toggleExtra('${ex.id}')"`;
+    return `<div class="${cls}" ${clickHandler}>
+      <div class="extra-card-top">
+        <div class="extra-card-name">${ex.name}</div>
+        <div class="extra-card-badge">${isIncluded ? "✓ Included" : ex.badge}</div>
+      </div>
+      <div class="extra-card-desc">${ex.desc}</div>
+    </div>`;
+  }).join("");
+}
+
+function toggleExtra(id) {
+  const pkgIncluded = getPkgIncludedExtras();
+  if (pkgIncluded.has(id)) return; // can't toggle included extras
+  state.selectedExtras.has(id) ? state.selectedExtras.delete(id) : state.selectedExtras.add(id);
+  renderExtras();
+}
+
+/* ═══════════════════════════════════════
+   COMMANDS
+═══════════════════════════════════════ */
+function renderCmdCats() {
+  document.getElementById("cmd-cats").innerHTML = CMD_CATS.map(c =>
+    `<button class="cmd-cat-btn${c==="all"?" active":""}" onclick="setCmdCat('${c}')">${c}</button>`
+  ).join("");
+}
+
+function setCmdCat(cat) {
+  state.cmdCat = cat;
+  document.querySelectorAll(".cmd-cat-btn").forEach(b => b.classList.toggle("active", b.textContent === cat));
+  renderCmds();
+}
+
+function renderCmds() {
+  const pkgIncluded = getPkgIncludedCmds();
+  const list = state.cmdCat === "all" ? ALL_COMMANDS : ALL_COMMANDS.filter(c => c.cat === state.cmdCat);
+  document.getElementById("cmd-grid").innerHTML = list.map(c => {
+    const isIncluded = pkgIncluded.has(c.name);
+    const isExtraSelected = !isIncluded && state.selectedCmds.has(c.name);
+    let cls = "cmd-chip";
+    if (isIncluded) cls += " included";
+    else if (isExtraSelected) cls += " selected extra-cost";
+    else cls += " extra-cost";
+    const clickHandler = isIncluded ? "" : `onclick="toggleCmd('${c.name}')"`;
+    return `<span class="${cls}" ${clickHandler}>${c.name}</span>`;
+  }).join("");
+
+  const includedCount = pkgIncluded.size;
+  const extraCount = state.selectedCmds.size;
+  document.getElementById("cmd-count").textContent = extraCount;
+
+  const note = document.getElementById("pkg-included-note");
+  const countEl = document.getElementById("pkg-included-count");
+  if (state.selectedPkg) {
+    note.style.display = "flex";
+    countEl.textContent = includedCount;
+  } else {
+    note.style.display = "none";
+  }
+}
+
+function toggleCmd(name) {
+  const pkgIncluded = getPkgIncludedCmds();
+  if (pkgIncluded.has(name)) return;
+  state.selectedCmds.has(name) ? state.selectedCmds.delete(name) : state.selectedCmds.add(name);
+  renderCmds(); updatePreview();
+}
+
+/* ═══════════════════════════════════════
+   COMMAND TICKER (preview)
+═══════════════════════════════════════ */
+function startCmdTicker() {
+  if (state.cmdTickerTimer) clearInterval(state.cmdTickerTimer);
+  state.cmdTickerTimer = setInterval(tickCmd, 7000);
+  tickCmd();
+}
+
+function tickCmd() {
+  const allCmds = ALL_COMMANDS.map(c => c.name);
+  const el = document.getElementById("prev-cmd-ticker");
+  if (!el) return;
+  const pkgIncluded = getPkgIncludedCmds();
+  const pool = pkgIncluded.size > 0 ? [...pkgIncluded] : allCmds;
+  const batch = [];
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  for (let i = 0; i < Math.min(4, shuffled.length); i++) batch.push(shuffled[i]);
+  el.style.opacity = "0";
+  setTimeout(() => {
+    el.textContent = batch.join("  ·  ");
+    el.style.opacity = "1";
+  }, 300);
+}
+
+/* ═══════════════════════════════════════
+   DESIGN: COLOR, UPLOADS
 ═══════════════════════════════════════ */
 function pickColor(el) {
   document.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("selected"));
@@ -904,9 +1204,6 @@ function pickCustomColor(inp) {
   updatePreview();
 }
 
-/* ═══════════════════════════════════════
-   UPLOADS
-═══════════════════════════════════════ */
 function readFileAsBase64(file) {
   return new Promise((res, rej) => {
     const r = new FileReader();
@@ -919,10 +1216,9 @@ function readFileAsBase64(file) {
 async function handleLogoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
+  if (file.size > 5*1024*1024) { alert("Max 5MB"); return; }
   const dataUrl = await readFileAsBase64(file);
-  state.logoUrl = dataUrl;
-  state.logoFile = {name: file.name, type: file.type, dataUrl};
+  state.logoUrl = dataUrl; state.logoFile = {name:file.name, type:file.type, dataUrl};
   document.getElementById("logo-upload-default").style.display = "none";
   document.getElementById("logo-preview").style.display = "flex";
   document.getElementById("logo-preview-img").src = dataUrl;
@@ -940,10 +1236,9 @@ function removeLogo(e) {
 async function handleBannerUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert("Max 5MB"); return; }
+  if (file.size > 5*1024*1024) { alert("Max 5MB"); return; }
   const dataUrl = await readFileAsBase64(file);
-  state.bannerUrl = dataUrl;
-  state.bannerFile = {name: file.name, type: file.type, dataUrl};
+  state.bannerUrl = dataUrl; state.bannerFile = {name:file.name, type:file.type, dataUrl};
   document.getElementById("banner-upload-default").style.display = "none";
   document.getElementById("banner-preview").style.display = "flex";
   document.getElementById("banner-preview-img").src = dataUrl;
@@ -960,111 +1255,35 @@ function removeBanner(e) {
 }
 
 /* ═══════════════════════════════════════
-   COMMANDS
-═══════════════════════════════════════ */
-function renderCmdCats() {
-  document.getElementById("cmd-cats").innerHTML = CMD_CATS.map(c =>
-    `<button class="cmd-cat-btn${c==="all"?" active":""}" onclick="setCmdCat('${c}')">${c}</button>`
-  ).join("");
-}
-function setCmdCat(cat) {
-  state.cmdCat = cat;
-  document.querySelectorAll(".cmd-cat-btn").forEach(b => b.classList.toggle("active", b.textContent === cat));
-  renderCmds();
-}
-function renderCmds() {
-  const list = state.cmdCat === "all" ? ALL_COMMANDS : ALL_COMMANDS.filter(c => c.cat === state.cmdCat);
-  document.getElementById("cmd-grid").innerHTML = list.map(c =>
-    `<span class="cmd-chip${state.selectedCmds.has(c.name)?" selected":""}" onclick="toggleCmd('${c.name}')">${c.name}</span>`
-  ).join("");
-  document.getElementById("cmd-count").textContent = state.selectedCmds.size;
-}
-function toggleCmd(name) {
-  state.selectedCmds.has(name) ? state.selectedCmds.delete(name) : state.selectedCmds.add(name);
-  renderCmds(); updatePreview();
-}
-
-/* ═══════════════════════════════════════
-   EXTRAS
-═══════════════════════════════════════ */
-function renderExtras() {
-  document.getElementById("extra-list").innerHTML = EXTRAS.map(ex => `
-    <div class="extra-card${state.selectedExtras.has(ex.id)?" selected":""}" onclick="toggleExtra('${ex.id}')">
-      <div class="extra-top">
-        <div class="extra-name">${ex.name}</div>
-        <div class="extra-badge">${ex.badge}</div>
-      </div>
-      <div class="extra-desc">${ex.desc}</div>
-    </div>`).join("");
-}
-function toggleExtra(id) {
-  state.selectedExtras.has(id) ? state.selectedExtras.delete(id) : state.selectedExtras.add(id);
-  renderExtras(); calcPrice();
-}
-
-/* ═══════════════════════════════════════
-   PACKAGES
-═══════════════════════════════════════ */
-function renderPackages() {
-  document.getElementById("pkg-grid").innerHTML = PACKAGES.map(p => `
-    <div class="pkg-card${state.selectedPkg===p.id?" selected":""}${p.popular?" popular":""}" onclick="selectPkg('${p.id}')">
-      ${p.popular ? '<div class="pkg-popular-badge">Most Popular</div>' : ''}
-      <div class="pkg-icon">${p.icon}</div>
-      <div class="pkg-name">${p.name}</div>
-      <div class="pkg-price">${p.price}</div>
-      <div class="pkg-robux">${p.robux} Robux</div>
-      <div class="pkg-desc">${p.desc}</div>
-    </div>`).join("");
-}
-function selectPkg(id) {
-  state.selectedPkg = id;
-  renderPackages(); calcPrice();
-}
-function calcPrice() {
-  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
-  let price = pkg ? pkg.price : "—";
-  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id === id)).filter(Boolean);
-  const addonTotal = extrasArr.reduce((sum, e) => sum + (parseInt(e.badge.replace(/[^0-9]/g,"")) || 0), 0);
-  if (addonTotal > 0) price += " + $" + addonTotal + " add-ons";
-  const priceEl = document.getElementById("sum-price");
-  if (priceEl) priceEl.textContent = price;
-  // Also update extras summary
-  const extrasEl = document.getElementById("sum-extras");
-  if (extrasEl) {
-    const names = Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
-    extrasEl.textContent = names.length ? names.join(", ") : "None";
-  }
-}
-
-/* ═══════════════════════════════════════
    PREVIEW
 ═══════════════════════════════════════ */
 function updatePreview() {
-  const botName = (document.getElementById("bot-name") || {}).value || "Your Bot Name";
-  const botStatus = (document.getElementById("bot-status") || {}).value || "No status set";
+  const botName = (document.getElementById("bot-name")||{}).value || "Your Bot Name";
+  const botStatus = (document.getElementById("bot-status")||{}).value || "No status set";
+  const serverName = (document.getElementById("server-name")||{}).value || "Your Server";
   const color = state.color || "#6390ff";
 
-  const prevName = document.getElementById("prev-bot-name");
-  if (prevName) prevName.textContent = botName;
-  const prevStatus = document.getElementById("prev-bot-status");
-  if (prevStatus) prevStatus.textContent = botStatus;
+  const el = (id) => document.getElementById(id);
+  if (el("prev-bot-name")) el("prev-bot-name").textContent = botName;
+  if (el("prev-bot-status")) el("prev-bot-status").textContent = botStatus;
+  if (el("prev-server-name")) el("prev-server-name").textContent = serverName;
+  if (el("prev-msg-name")) el("prev-msg-name").textContent = botName;
 
-  // Avatar
-  const logoImg = document.getElementById("prev-avatar-img");
-  const logoEmoji = document.getElementById("prev-avatar-emoji");
+  const logoImg = el("prev-avatar-img");
+  const logoEmoji = el("prev-avatar-emoji");
   if (state.logoUrl) {
     if (logoImg) { logoImg.src = state.logoUrl; logoImg.classList.add("show"); }
     if (logoEmoji) logoEmoji.style.display = "none";
-    const sidebar = document.getElementById("prev-sidebar-avatar");
+    const sidebar = el("prev-sidebar-icon");
     if (sidebar) sidebar.innerHTML = `<img src="${state.logoUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    sidebar.style.background = "transparent";
   } else {
     if (logoImg) logoImg.classList.remove("show");
     if (logoEmoji) logoEmoji.style.display = "";
   }
 
-  // Banner
-  const bannerImg = document.getElementById("prev-banner-img");
-  const bannerBg = document.getElementById("prev-banner-bg");
+  const bannerImg = el("prev-banner-img");
+  const bannerBg = el("prev-banner-bg");
   if (state.bannerUrl) {
     if (bannerImg) { bannerImg.src = state.bannerUrl; bannerImg.classList.add("show"); }
     if (bannerBg) bannerBg.style.background = "transparent";
@@ -1073,18 +1292,20 @@ function updatePreview() {
     if (bannerBg) bannerBg.style.background = "";
   }
 
-  // Color
-  const colorDot = document.getElementById("prev-color-dot");
+  const colorDot = el("prev-color-dot");
   if (colorDot) colorDot.style.background = color;
-  document.querySelectorAll(".prev-accent").forEach(el => el.style.color = color);
+  document.querySelectorAll(".prev-accent").forEach(e => e.style.color = color);
 
   buildDiscordEmbed();
+  updatePkgSidebar();
 }
 
 function buildDiscordEmbed() {
-  const botName = (document.getElementById("bot-name") || {}).value || "Your Bot Name";
+  const botName = (document.getElementById("bot-name")||{}).value || "Your Bot Name";
   const color = state.color || "#6390ff";
-  const cmdsArr = Array.from(state.selectedCmds);
+  const pkgIncluded = getPkgIncludedCmds();
+  const extraCmds = [...state.selectedCmds];
+  const allSelected = [...pkgIncluded, ...extraCmds];
   const embedEl = document.getElementById("discord-embed");
   if (!embedEl) return;
 
@@ -1101,21 +1322,57 @@ function buildDiscordEmbed() {
         <div class="embed-bot-badge">BOT</div>
       </div>
       <div class="embed-title">Bot Ready! 🚀</div>
-      <div class="embed-desc">Your custom Roblox bot has been set up.</div>
-      ${cmdsArr.length ? `<div class="embed-field"><div class="embed-field-name">Commands (${cmdsArr.length})</div><div class="embed-field-val">${cmdsArr.slice(0,6).join(", ")}${cmdsArr.length>6?" ...":""}</div></div>` : ""}
+      <div class="embed-desc">Your custom Roblox moderation bot is configured.</div>
+      ${allSelected.length ? `<div class="embed-field"><div class="embed-field-name">Commands (${allSelected.length})</div><div class="embed-field-val">${allSelected.slice(0,6).join(", ")}${allSelected.length>6?" ...":""}</div></div>` : ""}
     </div>`;
+}
+
+/* ═══════════════════════════════════════
+   ORDER SUMMARY
+═══════════════════════════════════════ */
+function updateOrderSummary() {
+  const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
+  const pkgIncluded = getPkgIncludedCmds();
+  const extraCmds = [...state.selectedCmds];
+  const extraAddons = [...state.selectedExtras];
+
+  const el = (id) => document.getElementById(id);
+  if (el("sum-package")) el("sum-package").textContent = pkg ? pkg.icon + " " + pkg.name : "Not selected";
+  if (el("sum-included-cmds")) el("sum-included-cmds").textContent = pkgIncluded.size + " commands";
+  if (el("sum-extra-cmds")) el("sum-extra-cmds").textContent = extraCmds.length + " × 100 Robux = " + (extraCmds.length * 100) + " Robux";
+  
+  const extraNames = extraAddons.map(id => EXTRAS.find(e => e.id===id)?.name).filter(Boolean);
+  if (el("sum-extras")) el("sum-extras").textContent = extraNames.length ? extraNames.join(", ") : "None";
+
+  // Price estimate
+  let usdMin = pkg ? pkg.baseUsdMin : 0;
+  let usdMax = pkg ? pkg.baseUsdMax : 0;
+  let rbx = pkg ? pkg.baseRbx : 0;
+
+  extraAddons.forEach(id => {
+    const ex = EXTRAS.find(e => e.id===id);
+    if (ex) { const amt = parseInt(ex.badge.replace(/[^0-9]/g,""))||0; usdMin+=amt; usdMax+=amt; rbx+=ex.robux; }
+  });
+
+  rbx += extraCmds.length * 100;
+  // ASAP surcharge
+  const timeline = (el("timeline")||{}).value || "";
+  if (timeline.includes("ASAP")) { usdMin+=5; usdMax+=5; rbx+=500; }
+
+  const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–"+usdMax;
+  const rbxEst = rbx.toLocaleString() + " Robux";
+
+  if (el("sum-usd")) el("sum-usd").textContent = usdEst;
+  if (el("sum-robux")) el("sum-robux").textContent = "🪙 " + rbxEst;
 }
 
 /* ═══════════════════════════════════════
    SPAM GUARD
 ═══════════════════════════════════════ */
-function markOrderSent() {
-  localStorage.setItem(SPAM_KEY, Date.now().toString());
-}
+function markOrderSent() { localStorage.setItem(SPAM_KEY, Date.now().toString()); }
 function getCooldownRemaining() {
   const last = localStorage.getItem(SPAM_KEY);
-  if (!last) return 0;
-  return Math.max(0, SPAM_WINDOW - (Date.now() - parseInt(last)));
+  return last ? Math.max(0, SPAM_WINDOW - (Date.now() - parseInt(last))) : 0;
 }
 
 /* ═══════════════════════════════════════
@@ -1126,39 +1383,45 @@ async function submitOrder() {
   if (!btn) return;
 
   const cooldown = getCooldownRemaining();
-  if (cooldown > 0) {
-    alert("Please wait " + Math.ceil(cooldown/60000) + " min before placing another order.");
-    return;
-  }
+  if (cooldown > 0) { alert("Wait " + Math.ceil(cooldown/60000) + " min before another order."); return; }
 
-  // Gather form values
-  const discord   = (document.getElementById("disc-username")  || {}).value || "";
-  const discId    = (document.getElementById("disc-id")        || {}).value || "";
-  const serverId  = (document.getElementById("server-invite")  || {}).value || "";
-  const payment   = (document.getElementById("payment-method") || {}).value || "";
-  const timeline  = (document.getElementById("timeline")       || {}).value || "";
-  const notes     = (document.getElementById("order-notes")    || {}).value || "";
-  const extraNotes= (document.getElementById("extra-notes")    || {}).value || "";
-  const allNotes  = [notes, extraNotes].filter(Boolean).join("\n") || "None";
-  const botName   = (document.getElementById("bot-name")       || {}).value || "Unnamed";
-  const botStatus = (document.getElementById("bot-status")     || {}).value || "";
-  const serverName= (document.getElementById("server-name")    || {}).value || "";
-  const footer    = (document.getElementById("embed-footer")   || {}).value || "";
+  const el = (id) => (document.getElementById(id)||{}).value || "";
+  const discord   = el("disc-username");
+  const discId    = el("disc-id");
+  const serverId  = el("server-invite");
+  const payment   = el("payment-method");
+  const timeline  = el("timeline");
+  const notes     = el("order-notes");
+  const botName   = el("bot-name") || "Unnamed";
+  const botStatus = el("bot-status");
+  const serverName= el("server-name");
+  const footer    = el("embed-footer");
 
   if (!discord || !payment) { alert("Please fill in Discord username and payment method."); return; }
 
   const pkg = PACKAGES.find(p => p.id === state.selectedPkg);
   if (!pkg) { alert("Please select a package first."); return; }
 
-  const cmdsArr   = Array.from(state.selectedCmds);
-  const extrasArr = Array.from(state.selectedExtras).map(id => EXTRAS.find(e => e.id === id)?.name).filter(Boolean);
+  const pkgIncluded = getPkgIncludedCmds();
+  const extraCmds   = [...state.selectedCmds];
+  const extraAddons = [...state.selectedExtras].map(id => EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
+
+  // Pricing
+  let usdMin = pkg.baseUsdMin, usdMax = pkg.baseUsdMax, rbx = pkg.baseRbx;
+  [...state.selectedExtras].forEach(id => {
+    const ex = EXTRAS.find(e=>e.id===id);
+    if (ex) { const amt = parseInt(ex.badge.replace(/[^0-9]/g,""))||0; usdMin+=amt; usdMax+=amt; rbx+=ex.robux; }
+  });
+  rbx += extraCmds.length * 100;
+  if (timeline.includes("ASAP")) { usdMin+=5; usdMax+=5; rbx+=500; }
+  const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–$"+usdMax;
+  const rbxEst = rbx.toLocaleString() + " Robux";
 
   const orderID = "EU-" + Math.random().toString(36).substr(2,6).toUpperCase();
 
   btn.disabled = true;
   btn.textContent = "Sending...";
 
-  // Build config text
   const configLines = [
     "EXOTIC UTILITIES — BOT CONFIG FILE",
     "Order ID: " + orderID,
@@ -1166,6 +1429,7 @@ async function submitOrder() {
     "",
     "--- CUSTOMER ---",
     "Discord      : " + discord,
+    "Discord ID   : " + discId,
     "Server Invite: " + serverId,
     "",
     "--- BOT ---",
@@ -1177,14 +1441,17 @@ async function submitOrder() {
     "",
     "--- ORDER ---",
     "Package      : " + pkg.name + " — " + pkg.price,
-    "Commands (" + cmdsArr.length + "): " + (cmdsArr.join(", ") || "None selected"),
-    "Add-Ons      : " + (extrasArr.join(", ") || "None"),
+    "Incl. Cmds   : " + pkgIncluded.size + " commands (see package)",
+    "Extra Cmds   : " + (extraCmds.join(", ") || "None"),
+    "Add-Ons      : " + (extraAddons.join(", ") || "None"),
     "Logo         : " + (state.logoFile ? "Yes — " + state.logoFile.name : "No"),
     "Banner       : " + (state.bannerFile ? "Yes — " + state.bannerFile.name : "No"),
     "",
     "--- PAYMENT ---",
     "Payment      : " + payment,
     "Timeline     : " + timeline,
+    "Est. USD     : " + usdEst,
+    "Est. Robux   : " + rbxEst,
     "",
     "--- NOTES ---",
     notes || "(none)"
@@ -1193,19 +1460,21 @@ async function submitOrder() {
   try {
     const form = new FormData();
     const embed = {
-      title: "New Bot Order",
+      title: "🚀 New Bot Order — " + pkg.icon + " " + pkg.name,
       color: 0x6390ff,
       fields: [
-        {name:"📋 Order ID",     value:"`"+orderID+"`",                    inline:true},
-        {name:"📦 Package",      value:pkg.icon+" "+pkg.name+" — "+pkg.price, inline:true},
-        {name:"👤 Customer",     value:"Username: "+discord+"\nUser ID: "+discId, inline:false},
-        {name:"🤖 Bot Details",  value:"Name: "+botName+"\nStatus: "+botStatus+"\nServer: "+serverName+"\nFooter: "+footer+"\nColor: "+state.color, inline:false},
-        {name:"📦 Assets",       value:"Logo: "+(state.logoFile?"✅ "+state.logoFile.name:"❌ Not uploaded")+"\nBanner: "+(state.bannerFile?"✅ "+state.bannerFile.name:"❌ Not uploaded"), inline:false},
-        {name:"⚡ Commands ("+cmdsArr.length+")", value: cmdsArr.length ? cmdsArr.join(", ") : "None selected", inline:false},
-        {name:"🎮 Add-Ons",      value: extrasArr.length ? extrasArr.join(", ") : "None", inline:true},
-        {name:"💳 Payment",      value: payment,   inline:true},
-        {name:"⏱ Timeline",     value: timeline || "—", inline:true},
-        {name:"📝 Notes",        value: allNotes, inline:false}
+        {name:"📋 Order ID",   value:"`"+orderID+"`", inline:true},
+        {name:"📦 Package",    value:pkg.icon+" "+pkg.name+" ("+pkg.price+")", inline:true},
+        {name:"👤 Customer",   value:"Username: "+discord+"\nUser ID: "+(discId||"—"), inline:false},
+        {name:"🤖 Bot Details", value:"Name: "+botName+"\nStatus: "+botStatus+"\nServer: "+serverName+"\nFooter: "+footer+"\nColor: "+state.color, inline:false},
+        {name:"📁 Assets",     value:"Logo: "+(state.logoFile?"✅ "+state.logoFile.name:"❌ None")+"\nBanner: "+(state.bannerFile?"✅ "+state.bannerFile.name:"❌ None"), inline:false},
+        {name:"⚡ Incl. Cmds", value:pkgIncluded.size+" commands included", inline:true},
+        {name:"➕ Extra Cmds (×100R)", value:extraCmds.length>0?extraCmds.join(", "):"None", inline:true},
+        {name:"🎮 Add-Ons",   value:extraAddons.join(", ")||"None", inline:false},
+        {name:"💳 Payment",   value:payment, inline:true},
+        {name:"⏱ Timeline",  value:timeline||"—", inline:true},
+        {name:"💰 Estimate",  value:usdEst+" / "+rbxEst, inline:true},
+        {name:"📝 Notes",     value:notes||"(none)", inline:false}
       ],
       footer: {text:"Exotic Utilities Order System • Config .txt attached"},
       timestamp: new Date().toISOString()
@@ -1213,24 +1482,29 @@ async function submitOrder() {
 
     const configBlob = new Blob([configLines], {type:"text/plain"});
     form.append("payload_json", JSON.stringify({embeds:[embed]}));
-    form.append("files[0]", configBlob, "EU-Config-" + orderID + ".txt");
-    if (state.logoFile)   form.append("files[1]", dataURLtoBlob(state.logoFile.dataUrl),   "logo-" + state.logoFile.name);
-    if (state.bannerFile) form.append("files[2]", dataURLtoBlob(state.bannerFile.dataUrl), "banner-" + state.bannerFile.name);
+    form.append("files[0]", configBlob, "EU-Config-"+orderID+".txt");
+    if (state.logoFile)   form.append("files[1]", dataURLtoBlob(state.logoFile.dataUrl),   "logo-"+state.logoFile.name);
+    if (state.bannerFile) form.append("files[2]", dataURLtoBlob(state.bannerFile.dataUrl), "banner-"+state.bannerFile.name);
 
     const res = await fetch(ORDER_WEBHOOK, {method:"POST", body:form});
     if (!res.ok) throw new Error("Webhook error " + res.status);
 
     markOrderSent();
-    await saveOrderLocally({orderID, package:pkg.name, botName, serverName, commands:cmdsArr, extras:extrasArr, color:state.color, payment, timeline, notes, logoFile:state.logoFile||null, bannerFile:state.bannerFile||null});
+    await saveOrderLocally({
+      orderID, package:pkg.name, botName, serverName,
+      includedCmds:[...pkgIncluded], extraCmds,
+      extras:extraAddons, color:state.color, payment, timeline,
+      notes, usdEst, rbxEst,
+      logoFile:state.logoFile||null, bannerFile:state.bannerFile||null
+    });
 
-    // Show success
     document.getElementById("step-4").style.display = "none";
     document.getElementById("success-ticket").innerHTML = `
       <div class="success-ticket-row"><span class="success-ticket-key">Order ID</span><span class="success-ticket-val">${orderID}</span></div>
       <div class="success-ticket-row"><span class="success-ticket-key">Package</span><span class="success-ticket-val">${pkg.name}</span></div>
       <div class="success-ticket-row"><span class="success-ticket-key">Bot Name</span><span class="success-ticket-val">${botName}</span></div>
       <div class="success-ticket-row"><span class="success-ticket-key">Discord</span><span class="success-ticket-val">${discord}</span></div>
-      <div class="success-ticket-row"><span class="success-ticket-key">Payment</span><span class="success-ticket-val">${payment}</span></div>
+      <div class="success-ticket-row"><span class="success-ticket-key">Est. Price</span><span class="success-ticket-val" style="color:var(--green)">${usdEst} / ${rbxEst}</span></div>
       <div class="success-ticket-row"><span class="success-ticket-key">Config File</span><span class="success-ticket-val" style="color:var(--green)">✅ Sent to team</span></div>`;
     document.getElementById("success-panel").classList.add("show");
     document.getElementById("steps-nav").style.opacity = "0.4";
@@ -1256,12 +1530,14 @@ async function saveOrderLocally(orderData) {
     package:     orderData.package,
     bot_name:    orderData.botName,
     server_name: orderData.serverName,
-    commands:    orderData.commands,
+    commands:    orderData.extraCmds,
     extras:      orderData.extras,
     color:       orderData.color,
     payment:     orderData.payment,
     timeline:    orderData.timeline,
     notes:       orderData.notes,
+    usd_est:     orderData.usdEst,
+    rbx_est:     orderData.rbxEst,
     discord:     window._currentUser.username || "",
     discord_id:  window._currentUser.id || "",
     email:       window._currentUser.email || "",
@@ -1270,100 +1546,59 @@ async function saveOrderLocally(orderData) {
     status:      "pending",
     created_at:  new Date().toISOString()
   };
-  // Save locally for instant dashboard display (includes images)
   const key = "eu_orders_" + window._currentUser.id;
   const local = JSON.parse(localStorage.getItem(key) || "[]");
   local.unshift(order);
   localStorage.setItem(key, JSON.stringify(local));
-  // Save to central JSONBin (strips images to save space)
-  try { await jbinAddOrder(order); }
-  catch(e) { console.warn("JSONBin save failed:", e); }
+  try { await jbinAddOrder(order); } catch(e) { console.warn("JSONBin save failed:", e); }
 }
 
 /* ═══════════════════════════════════════
-   DATAURL → BLOB HELPER
+   HELPERS
 ═══════════════════════════════════════ */
 function dataURLtoBlob(dataUrl) {
   const [header, data] = dataUrl.split(",");
   const mime = header.match(/:(.*?);/)[1];
   const bytes = atob(data);
   const arr = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-  return new Blob([arr], {type: mime});
+  for (let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+  return new Blob([arr], {type:mime});
 }
 
 /* ═══════════════════════════════════════
    REVIEW SYSTEM
 ═══════════════════════════════════════ */
 const BANNER_B64 = "data:image/png;base64,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dI++Mfwa9XOa+seWHLeBVF7on61SDmwn8V+HWNQf3OP7wqJvl1kusrHyRNj2BgAElWFi0x7NqHK6To1qtcSWRuEI0K89z4foiY/xz/xaqOpex32e2U7oI4mva55dvOMbv7KHVejH5cX2uVZbNVWRplTR2blBaaH+Kum/96KhBrGqH7pH6ZXLatSz0JqHdHY908m2TkjHYp7rcbnoqL0OZg0K4yu9it647mgjqymFSTrSt6hTR4+eV5v1hcD4sUbfxW1b0SdyI3hq77fyXojKg9bD/wDPS7/ht9arTtU3R5ztRDzMXLcL3cK6AwVEoMZ6wBjK0TXo3N2oTdP4eswWGveqYRcln0RHTx2ouika+R5Bkxw5D/7mpurpaesi71URNkb28FmFNUzU8gkgkdG8cWnCmqPVVfC0NmZHPjiRglYwW4mN2uQlajoVp86zQP5r/wCS6UNvo7e1zaSFjA45JO/P1r3qas01K6WSRrIoxkk8FTHaxqfg0cQ3/HKhrrda24vzUS+AetrRhbHXI0ZhpCg4euTSbrC4PG51b6+vlq3590dkA8uC51+L9VU96vXKndQxpGxGp2PlERYm0IiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiLwBERegIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIiAIiIAiIgCIi8wAiIvQEyiIAiIvMAIiL0BERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf//Z";
-
 let reviewStar = 0;
 let reviewOrderData = null;
-
-const STAR_DESCS = {
-  1:"😞 Not great — we'll do better",
-  2:"😕 Below expectations",
-  3:"😐 It was okay",
-  4:"😊 Great experience!",
-  5:"🤩 Absolutely amazing!"
-};
-
-const PKG_PRICES = {
-  "Basic":   {usdMin:5,  usdMax:10, rbxMin:400,  rbxMax:800},
-  "Advanced":{usdMin:15, usdMax:25, rbxMin:1200, rbxMax:2000},
-  "Elite":   {usdMin:30, usdMax:50, rbxMin:2400, rbxMax:4000}
-};
-const ADDON_PRICES = {
-  "tickets":{usd:5,rbx:400},"erlc":{usd:8,rbx:640},"xp":{usd:3,rbx:240},
-  "boost":{usd:3,rbx:240},"vc":{usd:3,rbx:240},"verify":{usd:4,rbx:320},"logs":{usd:3,rbx:240}
-};
+const STAR_DESCS = {1:"😞 Not great",2:"😕 Below expectations",3:"😐 Okay",4:"😊 Great!",5:"🤩 Amazing!"};
 
 function openReview() {
   try {
     const u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}");
     if (u && u.id) {
-      const name = u.global_name || u.username || "";
-      document.getElementById("review-username").textContent = name;
+      document.getElementById("review-username").textContent = u.global_name || u.username || "";
       document.getElementById("review-usertag").textContent = "@" + (u.username || "");
       const avatarEl = document.getElementById("review-avatar");
       if (avatarEl && u.avatar) {
         avatarEl.outerHTML = `<div class="review-avatar"><img src="https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64" alt=""></div>`;
-      } else if (avatarEl) {
-        avatarEl.textContent = name.slice(0,2).toUpperCase();
       }
-    }
-  } catch(e) {}
-
-  try {
-    const u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}");
-    if (u && u.id) {
       const orders = JSON.parse(localStorage.getItem("eu_orders_" + u.id) || "[]");
       if (orders.length) {
+        reviewOrderData = orders[0];
         const last = orders[0];
-        reviewOrderData = last;
-        const pp = PKG_PRICES[last.package] || {usdMin:0,usdMax:0,rbxMin:0,rbxMax:0};
-        let usdMin=pp.usdMin, usdMax=pp.usdMax, rbxMin=pp.rbxMin, rbxMax=pp.rbxMax;
-        const extras = Array.isArray(last.extras) ? last.extras : [];
-        extras.forEach(ex => {
-          const key = Object.keys(ADDON_PRICES).find(k => ex.toLowerCase().includes(k));
-          if (key) { const a = ADDON_PRICES[key]; usdMin+=a.usd; usdMax+=a.usd; rbxMin+=a.rbx; rbxMax+=a.rbx; }
-        });
-        const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–"+usdMax;
-        const rbxEst = rbxMin===rbxMax ? rbxMin.toLocaleString() : rbxMin.toLocaleString()+"–"+rbxMax.toLocaleString();
         const summaryEl = document.getElementById("review-order-summary");
         if (summaryEl) {
           summaryEl.style.display = "block";
           document.getElementById("review-order-items").innerHTML = `
             <div class="review-order-item"><div class="review-order-item-label">Order ID</div><div class="review-order-item-val" style="font-family:'JetBrains Mono';font-size:11px;">${last.order_id||"—"}</div></div>
             <div class="review-order-item"><div class="review-order-item-label">Package</div><div class="review-order-item-val">${last.package||"—"}</div></div>
-            <div class="review-order-item"><div class="review-order-item-label">Bot Name</div><div class="review-order-item-val">${last.bot_name||"—"}</div></div>
-            <div class="review-order-item"><div class="review-order-item-label">Est. USD</div><div class="review-order-item-val" style="color:var(--green);">${usdEst}</div></div>
-            <div class="review-order-item"><div class="review-order-item-label">Est. Robux</div><div class="review-order-item-val" style="color:var(--yellow);">R$ ${rbxEst}</div></div>`;
+            <div class="review-order-item"><div class="review-order-item-label">Est. USD</div><div class="review-order-item-val" style="color:var(--green);">${last.usd_est||"—"}</div></div>
+            <div class="review-order-item"><div class="review-order-item-label">Est. Robux</div><div class="review-order-item-val" style="color:var(--yellow);">${last.rbx_est||"—"}</div></div>`;
         }
       }
     }
   } catch(e) {}
-
   const overlay = document.getElementById("review-overlay");
   if (overlay) overlay.classList.add("show");
 }
@@ -1377,22 +1612,19 @@ function setStar(val) {
   reviewStar = val;
   document.querySelectorAll(".star-btn").forEach((btn,i) => btn.classList.toggle("lit", i < val));
   const desc = document.getElementById("stars-desc");
-  if (desc) {
-    desc.textContent = STAR_DESCS[val] || "";
-    desc.style.color = val>=4 ? "var(--green)" : val===3 ? "var(--yellow)" : "var(--red)";
-  }
+  if (desc) { desc.textContent = STAR_DESCS[val] || ""; desc.style.color = val>=4?"var(--green)":val===3?"var(--yellow)":"var(--red)"; }
   checkReviewReady();
 }
 
 function updateCharCount() {
-  const val = (document.getElementById("review-text") || {}).value || "";
+  const val = (document.getElementById("review-text")||{}).value || "";
   const el = document.getElementById("review-char");
   if (el) el.textContent = val.length;
   checkReviewReady();
 }
 
 function checkReviewReady() {
-  const text = (document.getElementById("review-text") || {}).value || "";
+  const text = (document.getElementById("review-text")||{}).value || "";
   const btn = document.getElementById("review-submit-btn");
   if (btn) btn.disabled = !(reviewStar > 0 && text.trim().length >= 10);
 }
@@ -1400,110 +1632,92 @@ function checkReviewReady() {
 async function submitReview() {
   const btn = document.getElementById("review-submit-btn");
   if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
-
-  const text = (document.getElementById("review-text") || {}).value.trim();
-  const stars = "⭐".repeat(reviewStar) + "✩".repeat(5 - reviewStar);
-  const starsLine = reviewStar + "/5 " + stars;
-
+  const text = (document.getElementById("review-text")||{}).value.trim();
+  const stars = "⭐".repeat(reviewStar) + "✩".repeat(5-reviewStar);
   let u = {};
   try { u = JSON.parse(localStorage.getItem("eu_discord_user") || "{}"); } catch(e) {}
-
   const username  = u.global_name || u.username || "Anonymous";
-  const discordTag = u.username ? "@" + u.username : "Unknown";
-  const avatarUrl  = (u.avatar && u.id) ? "https://cdn.discordapp.com/avatars/" + u.id + "/" + u.avatar + ".png" : null;
-
+  const discordTag = u.username ? "@"+u.username : "Unknown";
+  const avatarUrl  = (u.avatar && u.id) ? "https://cdn.discordapp.com/avatars/"+u.id+"/"+u.avatar+".png" : null;
   const orderFields = [];
   if (reviewOrderData) {
     const last = reviewOrderData;
-    const extras = Array.isArray(last.extras) && last.extras.length ? last.extras.join(", ") : "None";
-    const cmds = Array.isArray(last.commands) ? last.commands.length : 0;
-    const pp = PKG_PRICES[last.package] || {usdMin:0,usdMax:0,rbxMin:0,rbxMax:0};
-    let usdMin=pp.usdMin,usdMax=pp.usdMax,rbxMin=pp.rbxMin,rbxMax=pp.rbxMax;
-    (Array.isArray(last.extras)?last.extras:[]).forEach(ex => {
-      const key = Object.keys(ADDON_PRICES).find(k => ex.toLowerCase().includes(k));
-      if (key) { const a=ADDON_PRICES[key]; usdMin+=a.usd; usdMax+=a.usd; rbxMin+=a.rbx; rbxMax+=a.rbx; }
-    });
-    const usdEst = usdMin===usdMax ? "$"+usdMin : "$"+usdMin+"–"+usdMax;
-    const rbxEst = rbxMin===rbxMax ? rbxMin.toLocaleString()+" Robux" : rbxMin.toLocaleString()+"–"+rbxMax.toLocaleString()+" Robux";
     orderFields.push(
-      {name:"📦 Package",   value: last.package||"—", inline:true},
-      {name:"🤖 Bot Name",  value: last.bot_name||"—", inline:true},
-      {name:"⚡ Commands",  value: cmds+" selected",   inline:true},
-      {name:"🎮 Add-Ons",   value: extras,              inline:true},
-      {name:"💵 Est. USD",  value: usdEst,              inline:true},
-      {name:"🪙 Est. Robux",value: rbxEst,              inline:true}
+      {name:"📦 Package",  value:last.package||"—", inline:true},
+      {name:"🤖 Bot Name", value:last.bot_name||"—", inline:true},
+      {name:"💵 Est. USD", value:last.usd_est||"—",  inline:true},
+      {name:"🪙 Robux",   value:last.rbx_est||"—",  inline:true}
     );
   }
-
   const payload = {
-    username: "Exotic Utilities",
-    avatar_url: "https://martin54-hub2.github.io/Exotic-Utilities-/logo.png",
-    embeds: [{
-      author: {name: username, icon_url: avatarUrl || undefined},
-      description: starsLine + "\n\n> " + text,
-      color: reviewStar>=4 ? 0x22c55e : reviewStar===3 ? 0xf59e0b : 0xef4444,
-      fields: orderFields,
-      image: {url: "attachment://banner.png"},
-      footer: {text: discordTag + " • Exotic Utilities • Premium Bots"},
-      timestamp: new Date().toISOString()
+    username:"Exotic Utilities",
+    avatar_url:"https://martin54-hub2.github.io/Exotic-Utilities-/logo.png",
+    embeds:[{
+      author:{name:username, icon_url:avatarUrl||undefined},
+      description:reviewStar+"/5 "+stars+"\n\n> "+text,
+      color:reviewStar>=4?0x22c55e:reviewStar===3?0xf59e0b:0xef4444,
+      fields:orderFields,
+      image:{url:"attachment://banner.png"},
+      footer:{text:discordTag+" • Exotic Utilities • Premium Bots"},
+      timestamp:new Date().toISOString()
     }]
   };
-
   try {
     const bannerBlob = dataURLtoBlob(BANNER_B64);
     const form = new FormData();
     form.append("payload_json", JSON.stringify(payload));
     form.append("files[0]", bannerBlob, "banner.png");
     const res = await fetch(REVIEW_WEBHOOK, {method:"POST", body:form});
-    if (!res.ok) throw new Error("Webhook " + res.status);
-
+    if (!res.ok) throw new Error("Webhook "+res.status);
     document.getElementById("review-form-view").style.display = "none";
     document.getElementById("review-sent-view").style.display = "block";
-    if (reviewOrderData) localStorage.setItem("eu_reviewed_" + reviewOrderData.order_id, "1");
+    if (reviewOrderData) localStorage.setItem("eu_reviewed_"+reviewOrderData.order_id,"1");
   } catch(err) {
     console.error(err);
-    if (btn) { btn.disabled = false; btn.textContent = "Submit Review"; }
+    if (btn) { btn.disabled=false; btn.textContent="Submit Review"; }
     alert("Couldn't send review. Please try again.");
   }
 }
 
 /* ═══════════════════════════════════════
-   OBSERVE REVEALS
+   REVEAL & CURSOR
 ═══════════════════════════════════════ */
 function observeReveals() {
   const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); }
-    });
-  }, {threshold: 0.05});
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } });
+  }, {threshold:0.05});
   document.querySelectorAll(".reveal:not(.visible)").forEach(el => obs.observe(el));
 }
 
-/* ═══════════════════════════════════════
-   CURSOR
-═══════════════════════════════════════ */
 (function() {
   const dot = document.getElementById("cursor-dot");
   const ring = document.getElementById("cursor-ring");
   if (!dot || !ring) return;
-  let mx=-100, my=-100, dx=-100, dy=-100, rx=-100, ry=-100, hov=false;
-  document.addEventListener("mousemove", function(e) { mx=e.clientX; my=e.clientY; });
-  document.addEventListener("mouseover", function(e) {
-    try { if (e.target && e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=true; } catch(err) {}
+  let mx=-100,my=-100,dx=-100,dy=-100,rx=-100,ry=-100,hov=false;
+  document.addEventListener("mousemove", function(e){ mx=e.clientX; my=e.clientY; });
+  document.addEventListener("mouseover", function(e){
+    try{ if(e.target&&e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=true; } catch(err){}
   });
-  document.addEventListener("mouseout", function(e) {
-    try { if (e.target && e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=false; } catch(err) {}
+  document.addEventListener("mouseout", function(e){
+    try{ if(e.target&&e.target.closest("a,button,.cmd-chip,.pkg-card,.extra-card,.color-swatch")) hov=false; } catch(err){}
   });
-  function tick() {
-    dx+=(mx-dx)*0.45; dy+=(my-dy)*0.45;
-    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
-    dot.style.transform  = "translate(" + (dx-5)  + "px," + (dy-5)  + "px)";
-    ring.style.transform = "translate(" + (rx-22) + "px," + (ry-22) + "px) scale(" + (hov?1.8:1) + ")";
-    ring.style.opacity   = hov ? "0.7" : "0.4";
+  function tick(){
+    dx+=(mx-dx)*0.45; dy+=(my-dy)*0.45; rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    dot.style.transform="translate("+(dx-5)+"px,"+(dy-5)+"px)";
+    ring.style.transform="translate("+(rx-22)+"px,"+(ry-22)+"px) scale("+(hov?1.8:1)+")";
+    ring.style.opacity=hov?"0.7":"0.4";
     requestAnimationFrame(tick);
   }
   tick();
 })();
+
+let secretClicks=0, secretTimer;
+function secretClick(){
+  secretClicks++;
+  clearTimeout(secretTimer);
+  if(secretClicks>=5){ secretClicks=0; window.location.href="admin.html"; }
+  secretTimer=setTimeout(()=>secretClicks=0,2000);
+}
 
 /* ═══════════════════════════════════════
    BOOT
@@ -1511,19 +1725,11 @@ function observeReveals() {
 document.addEventListener("DOMContentLoaded", function() {
   checkAuth();
   init();
-
-  // Close modals on overlay click
   const reviewOverlay = document.getElementById("review-overlay");
   if (reviewOverlay) {
-    reviewOverlay.addEventListener("click", function(e) {
-      if (e.target === this) closeReview();
-    });
+    reviewOverlay.addEventListener("click", function(e){ if(e.target===this) closeReview(); });
   }
 });
-
-
-
-
 
 </script>
 </body>

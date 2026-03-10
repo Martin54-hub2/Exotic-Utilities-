@@ -309,6 +309,9 @@ input,textarea{cursor:text;}
 
 <script>
 
+
+
+
 /* ════════════════════════════════
    CONFIG — Change your PIN here!
 ════════════════════════════════ */
@@ -462,13 +465,47 @@ function getFiltered(){
   const sort=document.getElementById("sort-sel").value;
   let list=allOrders.filter(o=>{
     const ms=activeFilter==="all"||(activeFilter==="priority"?o.priority:o.status===activeFilter);
-    const mq=!q||(o.order_id||"").toLowerCase().includes(q)||(o.discord||"").toLowerCase().includes(q)||(o.bot_name||"").toLowerCase().includes(q)||(o.package||"").toLowerCase().includes(q)||(o.email||"").toLowerCase().includes(q);
+    const mq=!q||(o.order_id||"").toLowerCase().includes(q)||(o.discord||"").toLowerCase().includes(q)||(o.discord_id||"").toLowerCase().includes(q)||(o.bot_name||"").toLowerCase().includes(q)||(o.package||"").toLowerCase().includes(q)||(o.email||"").toLowerCase().includes(q)||(o.payment||"").toLowerCase().includes(q);
     return ms&&mq;
   });
   if(sort==="oldest") list=[...list].reverse();
   else if(sort==="priority") list=[...list].sort((a,b)=>(b.priority?1:0)-(a.priority?1:0));
   return list;
 }
+
+/* ── User Lookup ── */
+function viewUserOrders(discordUsername) {
+  document.getElementById("search").value = discordUsername;
+  renderOrders();
+  document.getElementById("toolbar-title").textContent = "Orders by @" + discordUsername;
+  document.getElementById("search").focus();
+}
+
+function filterByUser(username) {
+  const searchEl = document.getElementById("search");
+  if (searchEl) {
+    searchEl.value = username;
+    renderOrders();
+    document.getElementById("toolbar-title").textContent = "Orders for @" + username;
+  }
+}
+
+
+function getUserStats(discordUsername) {
+  const userOrders = allOrders.filter(o =>
+    (o.discord||"").toLowerCase() === discordUsername.toLowerCase()
+  );
+  const total = userOrders.length;
+  const delivered = userOrders.filter(o => o.status === "delivered").length;
+  const totalSpend = userOrders.map(o => {
+    const pkg = (o.package||"").toLowerCase();
+    if (pkg.includes("premium")) return 40;
+    if (pkg.includes("advanced")) return 20;
+    return 7;
+  }).reduce((a,b)=>a+b,0);
+  return {total, delivered, totalSpend, orders: userOrders};
+}
+
 
 /* ── Render ──────────────────────────────── */
 const SC={pending:"pending",building:"building",delivered:"delivered",cancelled:"cancelled"};
@@ -498,8 +535,8 @@ function renderOrders(){
         <div class="priority-dot${isPriority?" on":""}" title="${isPriority?"Priority":"Normal"}"></div>
         <div class="ocell mono">${oid}</div>
         <div class="ocell">
-          <div class="bold">${o.discord?`@${o.discord}`:o.email||"Unknown"}</div>
-          <div style="font-size:11px;color:var(--gray);margin-top:1px;">${o.email||""}</div>
+          <div class="bold clickable-user" onclick="event.stopPropagation();filterByUser(this.textContent.replace('@',''))" title="Click to filter by this user" style="color:var(--blue);cursor:pointer;">${o.discord?`@${o.discord}`:o.email||"Unknown"}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:1px;">${o.discord_id||o.email||""}</div>
         </div>
         <div class="ocell bold">${o.package||"—"}</div>
         <div class="ocell sm">${date}</div>
@@ -801,6 +838,9 @@ document.addEventListener("DOMContentLoaded", function(){
   }
   tick();
 })();
+
+
+
 
 </script>
 </body>
