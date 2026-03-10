@@ -502,6 +502,25 @@ img{max-width:100%;}
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1480715326663426058/Q8eWvzJpra9Fg4UBjC1QmC3xTIo9skm-ySQkO8wNrvctV8A_9xbL8GVRBZQ_sc7pjbNA";
 
 /* ═══════════════════════════
+   ANTI-SPAM — Rate limit: 1 order per 30 mins per browser
+═══════════════════════════ */
+const SPAM_KEY = "eu_last_order";
+const SPAM_WINDOW = 30 * 60 * 1000; // 30 minutes
+function canSubmitOrder(){
+  const last = localStorage.getItem(SPAM_KEY);
+  if(!last) return true;
+  return Date.now() - parseInt(last) > SPAM_WINDOW;
+}
+function markOrderSent(){
+  localStorage.setItem(SPAM_KEY, Date.now().toString());
+}
+function getCooldownRemaining(){
+  const last = localStorage.getItem(SPAM_KEY);
+  if(!last) return 0;
+  return Math.max(0, SPAM_WINDOW - (Date.now() - parseInt(last)));
+}
+
+/* ═══════════════════════════
    DATA
 ═══════════════════════════ */
 const ALL_COMMANDS = [
@@ -550,6 +569,7 @@ const PACKAGES = [
 ═══════════════════════════ */
 const state = {
   color:"#6390ff",logoUrl:null,bannerUrl:null,
+  logoFile:null,bannerFile:null,
   selectedCmds:new Set(),selectedExtras:new Set(),
   package:null,cmdCat:"all",
 };
@@ -602,35 +622,49 @@ function pickCustomColor(inp){
 /* ═══════════════════════════
    UPLOADS
 ═══════════════════════════ */
-function handleLogoUpload(e){
+function readFileAsBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result); // full data URL: "data:image/png;base64,..."
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+async function handleLogoUpload(e){
   const file=e.target.files[0];if(!file)return;
-  const url=URL.createObjectURL(file);state.logoUrl=url;
+  if(file.size>5*1024*1024){alert("Logo must be under 5MB.");return;}
+  const dataUrl=await readFileAsBase64(file);
+  state.logoUrl=dataUrl;
+  state.logoFile={name:file.name,type:file.type,dataUrl};
   document.getElementById("logo-upload-default").style.display="none";
   const prev=document.getElementById("logo-preview");prev.classList.add("show");
-  document.getElementById("logo-preview-img").src=url;
+  document.getElementById("logo-preview-img").src=dataUrl;
   document.getElementById("logo-preview-name").textContent=file.name.length>20?file.name.slice(0,18)+"…":file.name;
   document.getElementById("logo-upload-area").classList.add("has-file");
   updatePreview();
 }
 function removeLogo(e){
-  e.preventDefault();e.stopPropagation();state.logoUrl=null;
+  e.preventDefault();e.stopPropagation();state.logoUrl=null;state.logoFile=null;
   document.getElementById("logo-upload-default").style.display="";
   document.getElementById("logo-preview").classList.remove("show");
   document.getElementById("logo-upload-area").classList.remove("has-file");
   document.getElementById("logo-file-input").value="";updatePreview();
 }
-function handleBannerUpload(e){
+async function handleBannerUpload(e){
   const file=e.target.files[0];if(!file)return;
-  const url=URL.createObjectURL(file);state.bannerUrl=url;
+  if(file.size>8*1024*1024){alert("Banner must be under 8MB.");return;}
+  const dataUrl=await readFileAsBase64(file);
+  state.bannerUrl=dataUrl;
+  state.bannerFile={name:file.name,type:file.type,dataUrl};
   document.getElementById("banner-upload-default").style.display="none";
   const prev=document.getElementById("banner-preview");prev.classList.add("show");
-  document.getElementById("banner-preview-img").src=url;
+  document.getElementById("banner-preview-img").src=dataUrl;
   document.getElementById("banner-preview-name").textContent=file.name.length>20?file.name.slice(0,18)+"…":file.name;
   document.getElementById("banner-upload-area").classList.add("has-file");
   updatePreview();
 }
 function removeBanner(e){
-  e.preventDefault();e.stopPropagation();state.bannerUrl=null;
+  e.preventDefault();e.stopPropagation();state.bannerUrl=null;state.bannerFile=null;
   document.getElementById("banner-upload-default").style.display="";
   document.getElementById("banner-preview").classList.remove("show");
   document.getElementById("banner-upload-area").classList.remove("has-file");
@@ -734,7 +768,27 @@ function updatePreview(){
   const extraNames=Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
   document.getElementById("sum-extras").textContent=extraNames.length?extraNames.slice(0,2).join(", ")+(extraNames.length>2?" +more":""):"None";
   document.getElementById("sum-timeline").textContent=document.getElementById("timeline")?.value||"—";
-  document.getElementById("sum-price").textContent=pkg?pkg.price+" USD":"—";
+
+  // Live price estimate
+  let baseMin=0,baseMax=0;
+  if(pkg){
+    const ranges={basic:[5,10],advanced:[15,25],elite:[30,50]};
+    [baseMin,baseMax]=ranges[pkg.id]||[0,0];
+  }
+  // Add-on costs
+  const addonCosts={tickets:5,erlc:8,xp:3,boost:3,vc:3,verify:4,logs:3};
+  let addonTotal=0;
+  state.selectedExtras.forEach(id=>{addonTotal+=(addonCosts[id]||0);});
+  // Rush fee
+  const timelineVal=document.getElementById("timeline")?.value||"";
+  const rushFee=timelineVal.includes("Rush")?5:0;
+  if(baseMin>0||addonTotal>0){
+    const totalMin=baseMin+addonTotal+rushFee;
+    const totalMax=baseMax+addonTotal+rushFee;
+    document.getElementById("sum-price").textContent=`$${totalMin}–$${totalMax} USD`;
+  } else {
+    document.getElementById("sum-price").textContent="—";
+  }
 }
 
 function buildDiscordEmbed(botName="Your Bot",footer="Bot • Footer",color="#6390ff"){
@@ -781,25 +835,81 @@ async function submitOrder(){
   if(!userId){alert("Please enter your Discord User ID.");return;}
   if(!pkg){alert("Please select a package first.");goStep(3);return;}
 
+  // Anti-spam check
+  if(!canSubmitOrder()){
+    const mins=Math.ceil(getCooldownRemaining()/60000);
+    alert(`⏳ Slow down! You already placed an order recently.\nPlease wait ${mins} more minute${mins!==1?"s":""} before ordering again.`);
+    return;
+  }
+
   btn.disabled=true;btn.textContent="Sending order...";
 
   const orderID="EU-"+Math.random().toString(36).substring(2,8).toUpperCase();
   const cmdsArr=Array.from(state.selectedCmds);
   const extrasArr=Array.from(state.selectedExtras).map(id=>EXTRAS.find(e=>e.id===id)?.name).filter(Boolean);
   const botName=document.getElementById("bot-name").value||"—";
+  const botStatus=document.getElementById("bot-status").value||"—";
   const serverName=document.getElementById("server-name").value||"—";
+  const embedFooter=document.getElementById("embed-footer").value||"—";
   const serverInvite=document.getElementById("server-invite").value||"—";
   const payment=document.getElementById("payment-method").value||"—";
   const timeline=document.getElementById("timeline").value||"—";
   const extraNotes=document.getElementById("extra-notes").value||"";
   const orderNotes=document.getElementById("order-notes").value||"";
   const allNotes=[extraNotes,orderNotes].filter(Boolean).join("\n\n")||"None";
-
   const colorInt=parseInt(state.color.replace("#",""),16);
 
-  const webhookPayload={
+  // ── Build .txt config file ──────────────────────────────────
+  const configLines=[
+    "╔══════════════════════════════════════════╗",
+    "   EXOTIC UTILITIES — BOT CONFIG FILE",
+    "   Order ID: "+orderID,
+    "   Generated: "+new Date().toLocaleString(),
+    "╚══════════════════════════════════════════╝",
+    "",
+    "━━━ CUSTOMER INFO ━━━━━━━━━━━━━━━━━━━━━━━━",
+    "Discord Username : "+username,
+    "Discord User ID  : "+userId,
+    "Server Invite    : "+serverInvite,
+    "",
+    "━━━ BOT IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "Bot Name         : "+botName,
+    "Status Text      : "+botStatus,
+    "Server Name      : "+serverName,
+    "Embed Footer     : "+embedFooter,
+    "Embed Color      : "+state.color,
+    "Logo Uploaded    : "+(state.logoFile?"Yes — "+state.logoFile.name:"No"),
+    "Banner Uploaded  : "+(state.bannerFile?"Yes — "+state.bannerFile.name:"No"),
+    "",
+    "━━━ PACKAGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "Package          : "+pkg.name+" ("+pkg.price+")",
+    "",
+    "━━━ COMMANDS ("+cmdsArr.length+") ━━━━━━━━━━━━━━━━━━━━━━━━",
+    ...cmdsArr.map(c=>"  "+c),
+    "",
+    "━━━ ADD-ONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    ...(extrasArr.length>0?extrasArr.map(e=>"  • "+e):["  None"]),
+    "",
+    "━━━ ORDER DETAILS ━━━━━━━━━━━━━━━━━━━━━━━",
+    "Payment Method   : "+payment,
+    "Timeline         : "+timeline,
+    "",
+    "━━━ NOTES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    allNotes,
+    "",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "Send this file to Claude AI with the prompt:",
+    '"Configure a Discord.js bot using this config file.',
+    'Set up all listed commands, use the embed color,',
+    'bot name, footer, and status text throughout."',
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+  ];
+  const configText=configLines.join("\n");
+  const configBlob=new Blob([configText],{type:"text/plain"});
+
+  // ── Build Discord embed payload ──────────────────────────────
+  const embedPayload={
     username:"Exotic Utilities",
-    avatar_url:"https://i.imgur.com/AfFp7pu.png",
     embeds:[{
       title:"New Bot Order",
       description:`> **Order ID:** \`${orderID}\`\n> **Package:** ${pkg.icon} ${pkg.name} — ${pkg.price}`,
@@ -812,12 +922,17 @@ async function submitOrder(){
         },
         {
           name:"🤖  Bot Details",
-          value:`**Bot Name:** ${botName}\n**Server Name:** ${serverName}\n**Embed Color:** \`${state.color}\``,
+          value:`**Name:** ${botName}\n**Status:** ${botStatus}\n**Server:** ${serverName}\n**Footer:** ${embedFooter}\n**Color:** \`${state.color}\``,
           inline:false
         },
         {
-          name:`⚡  Commands Selected (${cmdsArr.length})`,
-          value:cmdsArr.length>0 ? cmdsArr.map(c=>`\`${c}\``).join(" ") : "*None selected*",
+          name:"🖼️  Assets",
+          value:`**Logo:** ${state.logoFile?"✅ "+state.logoFile.name:"❌ Not uploaded"}\n**Banner:** ${state.bannerFile?"✅ "+state.bannerFile.name:"❌ Not uploaded"}`,
+          inline:false
+        },
+        {
+          name:`⚡  Commands (${cmdsArr.length})`,
+          value:cmdsArr.length>0?cmdsArr.map(c=>`\`${c}\``).join(" "):"*None selected*",
           inline:false
         },
         ...(extrasArr.length>0?[{
@@ -825,34 +940,48 @@ async function submitOrder(){
           value:extrasArr.map(e=>`• ${e}`).join("\n"),
           inline:false
         }]:[]),
-        {
-          name:"💳  Payment",
-          value:payment,
-          inline:true
-        },
-        {
-          name:"⏱️  Timeline",
-          value:timeline,
-          inline:true
-        },
+        {name:"💳  Payment",value:payment,inline:true},
+        {name:"⏱️  Timeline",value:timeline,inline:true},
         ...(allNotes&&allNotes!=="None"?[{
           name:"📝  Notes",
-          value:allNotes.length>1000?allNotes.slice(0,997)+"...":allNotes,
+          value:allNotes.length>900?allNotes.slice(0,897)+"...":allNotes,
           inline:false
         }]:[]),
       ],
-      footer:{text:"Exotic Utilities Order System"},
+      footer:{text:"Exotic Utilities Order System • Config .txt attached"},
       timestamp:new Date().toISOString(),
     }]
   };
 
+  // ── Send everything via multipart/form-data ──────────────────
   try{
-    if(WEBHOOK_URL && WEBHOOK_URL.startsWith("https://discord.com/api/webhooks/")){
-      await fetch(WEBHOOK_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(webhookPayload)});
+    const form=new FormData();
+    // Main embed JSON
+    form.append("payload_json", JSON.stringify(embedPayload));
+    // Config .txt file
+    form.append("files[0]", configBlob, `EU-Config-${orderID}.txt`);
+    // Logo image (if uploaded) — convert base64 to blob
+    if(state.logoFile){
+      const logoBlob=dataURLtoBlob(state.logoFile.dataUrl);
+      form.append("files[1]", logoBlob, `logo-${state.logoFile.name}`);
     }
-  }catch(err){console.warn("Webhook send failed:",err);}
+    // Banner image (if uploaded)
+    if(state.bannerFile){
+      const bannerBlob=dataURLtoBlob(state.bannerFile.dataUrl);
+      form.append("files[2]", bannerBlob, `banner-${state.bannerFile.name}`);
+    }
 
-  // Show success
+    const res=await fetch(WEBHOOK_URL,{method:"POST",body:form});
+    if(!res.ok) throw new Error("Webhook returned "+res.status);
+    markOrderSent();
+  }catch(err){
+    console.warn("Webhook send failed:",err);
+    btn.disabled=false;btn.textContent="🚀 Place Order";
+    alert("Something went wrong sending your order. Please try again or join our Discord.");
+    return;
+  }
+
+  // ── Show success ─────────────────────────────────────────────
   document.getElementById("step-4").style.display="none";
   document.getElementById("success-ticket").innerHTML=`
     <div class="success-ticket-row"><span class="success-ticket-key">Order ID</span><span class="success-ticket-val">${orderID}</span></div>
@@ -861,11 +990,22 @@ async function submitOrder(){
     <div class="success-ticket-row"><span class="success-ticket-key">Commands</span><span class="success-ticket-val">${cmdsArr.length} selected</span></div>
     <div class="success-ticket-row"><span class="success-ticket-key">Discord</span><span class="success-ticket-val">${username}</span></div>
     <div class="success-ticket-row"><span class="success-ticket-key">Payment</span><span class="success-ticket-val">${payment}</span></div>
+    <div class="success-ticket-row"><span class="success-ticket-key">Config File</span><span class="success-ticket-val" style="color:var(--green)">✅ Sent to team</span></div>
   `;
   document.getElementById("success-panel").classList.add("show");
   document.getElementById("steps-nav").style.opacity="0.4";
   document.getElementById("steps-nav").style.pointerEvents="none";
   window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* Helper: convert base64 dataURL → Blob */
+function dataURLtoBlob(dataUrl){
+  const [header,data]=dataUrl.split(",");
+  const mime=header.match(/:(.*?);/)[1];
+  const binary=atob(data);
+  const arr=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) arr[i]=binary.charCodeAt(i);
+  return new Blob([arr],{type:mime});
 }
 
 /* ═══════════════════════════
