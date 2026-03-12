@@ -92,74 +92,223 @@ code{font-family:'JetBrains Mono',monospace;font-size:0.85em;background:rgba(99,
 .form-textarea{padding:11px 15px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--white);font-family:'Outfit';font-size:13px;resize:vertical;min-height:80px;outline:none;transition:border-color 0.2s;}
 .form-textarea:focus{border-color:var(--border-h);}
 
-/* Package grid */
-.pkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch;}
-@media(max-width:860px){.pkg-grid{grid-template-columns:1fr;}}
-
-.pkg-card{
-  padding:20px 18px 18px;border-radius:16px;
-  background:var(--surface);border:2px solid var(--border);
-  cursor:pointer;transition:all 0.25s;
-  text-align:left;position:relative;
-  display:flex;flex-direction:column;
+/* ═══ PACKAGE & EXTRAS ═══════════════════════════════════════════════════ */
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 12px;
+  align-items: stretch;
 }
-.pkg-card:hover{border-color:rgba(99,144,255,0.25);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.25);}
-.pkg-card.selected{
-  border-color:var(--blue);
-  background:rgba(99,144,255,0.05);
-  box-shadow:0 0 0 1px rgba(99,144,255,0.15), 0 8px 40px rgba(99,144,255,0.1);
+@media(max-width:860px){ .pkg-grid { grid-template-columns:1fr; } }
+
+.pkg-card {
+  padding: 0;
+  border-radius: 14px;
+  background: #0b1120;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
-.pkg-card-pop{
-  position:absolute;top:-11px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(135deg,var(--blue),var(--accent));
-  color:#fff;font-size:9px;font-weight:800;
-  padding:3px 12px;border-radius:20px;
-  text-transform:uppercase;letter-spacing:0.8px;
-  white-space:nowrap;box-shadow:0 2px 10px var(--blue-glow);
+.pkg-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(99,144,255,0.03) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.pkg-card:hover::before { opacity: 1; }
+.pkg-card:hover {
+  border-color: rgba(99,144,255,0.22);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,144,255,0.08);
+}
+.pkg-card.selected {
+  border-color: rgba(99,144,255,0.5);
+  box-shadow: 0 0 0 1px rgba(99,144,255,0.15), 0 20px 60px rgba(99,144,255,0.1);
+}
+.pkg-card.selected::before { opacity: 1; }
+
+/* Popular banner */
+.pkg-card-pop {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  background: linear-gradient(90deg, rgba(99,144,255,0.15), rgba(129,140,248,0.1));
+  border-bottom: 1px solid rgba(99,144,255,0.18);
+  color: #a5b4fc;
+  font-size: 9px; font-weight: 800;
+  padding: 6px 16px;
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.pkg-card-pop::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #6390ff;
+  box-shadow: 0 0 6px #6390ff;
 }
 
-.pkg-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.pkg-icon{font-size:24px;flex-shrink:0;}
-.pkg-head-text{display:flex;flex-direction:column;gap:1px;}
-.pkg-name{font-size:15px;font-weight:900;color:var(--white);line-height:1.2;}
-.pkg-tag{font-size:10px;font-weight:700;color:var(--gray-lt);text-transform:uppercase;letter-spacing:0.7px;}
-
-.pkg-pricing{display:flex;align-items:baseline;gap:6px;margin-bottom:12px;}
-.pkg-price{font-size:22px;font-weight:900;color:var(--blue);}
-.pkg-robux{font-size:11px;font-weight:700;color:var(--yellow);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);padding:2px 7px;border-radius:5px;}
-
-.pkg-divider{height:1px;background:var(--border);margin:0 0 12px;}
-.pkg-features{display:flex;flex-direction:column;gap:7px;flex:1;}
-.pkg-feat{display:flex;align-items:flex-start;gap:8px;}
-.pkg-feat-icon{font-size:13px;flex-shrink:0;margin-top:1px;line-height:1;}
-.pkg-feat-text{font-size:11.5px;color:var(--gray-lt);line-height:1.45;}
-.pkg-card.selected .pkg-feat-text{color:rgba(240,242,248,0.85);}
-.pkg-feat-text b{color:var(--white);font-weight:700;}
-
-.pkg-select-hint{
-  margin-top:14px;padding:8px;border-radius:8px;
-  text-align:center;font-size:11px;font-weight:700;
-  background:rgba(99,144,255,0.07);color:var(--blue);
-  border:1px solid rgba(99,144,255,0.12);
-  transition:all 0.2s;
-}
-.pkg-card.selected .pkg-select-hint{
-  background:var(--blue);color:#fff;
-  border-color:var(--blue);
+/* Card body */
+.pkg-body {
+  padding: 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-/* Extras grid */
-.extras-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px;}
-.extra-card{padding:13px 15px;border-radius:11px;background:var(--surface);border:2px solid var(--border);cursor:pointer;transition:all 0.2s;position:relative;}
-.extra-card:hover{border-color:rgba(99,144,255,0.2);}
-.extra-card.selected{border-color:var(--blue);background:rgba(99,144,255,0.05);}
-.extra-card.included{border-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.03);opacity:0.75;cursor:default;}
-.extra-card.included::after{content:'✓ Included';position:absolute;top:8px;right:8px;font-size:9px;color:var(--green);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
-.extra-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
-.extra-card-name{font-size:13px;font-weight:700;}
-.extra-card-badge{padding:2px 7px;border-radius:5px;background:rgba(99,144,255,0.1);color:var(--blue);font-size:10px;font-weight:800;border:1px solid rgba(99,144,255,0.15);}
-.extra-card.selected .extra-card-badge{background:var(--blue);color:#fff;}
-.extra-card-desc{font-size:11px;color:var(--gray-lt);}
+/* Header row */
+.pkg-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.pkg-head-text { display: flex; flex-direction: column; gap: 4px; }
+.pkg-name {
+  font-size: 15px; font-weight: 800;
+  color: #f0f2f8; letter-spacing: -0.2px;
+}
+.pkg-tag {
+  font-size: 9.5px; font-weight: 600;
+  color: rgba(107,114,128,0.9);
+  text-transform: uppercase; letter-spacing: 0.9px;
+}
+
+/* Pricing block */
+.pkg-pricing { text-align: right; }
+.pkg-price {
+  font-size: 20px; font-weight: 900;
+  color: #6390ff; letter-spacing: -0.8px;
+  line-height: 1;
+}
+.pkg-robux-row {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 4px; margin-top: 4px;
+}
+.pkg-robux-icon {
+  width: 13px; height: 13px; flex-shrink: 0;
+}
+.pkg-robux-val {
+  font-size: 10px; font-weight: 700;
+  color: rgba(250,176,5,0.9);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Divider */
+.pkg-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
+  margin-bottom: 16px;
+}
+
+/* Features */
+.pkg-features {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  flex: 1;
+}
+.pkg-feat {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: 11.5px; color: rgba(160,174,200,0.8); line-height: 1.45;
+}
+.pkg-feat-check {
+  width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px;
+  color: #6390ff; opacity: 0.5;
+}
+.pkg-card.selected .pkg-feat-check { opacity: 1; }
+.pkg-card.selected .pkg-feat { color: rgba(220,228,248,0.9); }
+
+/* Select button */
+.pkg-select-btn {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 9px;
+  border: 1px solid rgba(99,144,255,0.18);
+  background: rgba(99,144,255,0.04);
+  color: rgba(99,144,255,0.8);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pkg-select-btn:hover {
+  background: rgba(99,144,255,0.1);
+  border-color: rgba(99,144,255,0.35);
+  color: #6390ff;
+}
+.pkg-select-btn.active {
+  background: #6390ff;
+  border-color: #6390ff;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(99,144,255,0.3);
+}
+
+/* ═══ EXTRAS ════════════════════════════════════════════════════════════════ */
+.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px,1fr));
+  gap: 8px;
+}
+.extra-card {
+  padding: 14px 16px;
+  border-radius: 11px;
+  background: #0b1120;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.extra-card:hover {
+  border-color: rgba(99,144,255,0.22);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.extra-card.selected {
+  border-color: rgba(99,144,255,0.45);
+  background: rgba(99,144,255,0.05);
+}
+.extra-card.included {
+  border-color: rgba(34,197,94,0.18);
+  background: rgba(34,197,94,0.02);
+  cursor: default;
+}
+.extra-card-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 5px; gap: 8px;
+}
+.extra-card-name {
+  font-size: 12px; font-weight: 700;
+  color: #e8eaf6;
+}
+.extra-card-badge {
+  font-size: 10px; font-weight: 700;
+  color: #6390ff;
+  background: rgba(99,144,255,0.08);
+  border: 1px solid rgba(99,144,255,0.14);
+  padding: 2px 8px; border-radius: 5px;
+  white-space: nowrap; flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+.extra-card.included .extra-card-badge {
+  color: #22c55e;
+  background: rgba(34,197,94,0.07);
+  border-color: rgba(34,197,94,0.14);
+}
+.extra-card.selected .extra-card-badge {
+  background: rgba(99,144,255,0.15);
+  border-color: rgba(99,144,255,0.3);
+}
+.extra-card-desc {
+  font-size: 11px; color: rgba(107,114,128,0.9); line-height: 1.45;
+}
+
 
 /* Commands */
 .cmd-cats{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px;}
@@ -953,6 +1102,10 @@ code{font-family:'JetBrains Mono',monospace;font-size:0.85em;background:rgba(99,
 
 
 
+
+
+
+
 const ORDER_WEBHOOK  = "https://discord.com/api/webhooks/1480715326663426058/Q8eWvzJpra9Fg4UBjC1QmC3xTIo9skm-ySQkO8wNrvctV8A_9xbL8GVRBZQ_sc7pjbNA";
 const REVIEW_WEBHOOK = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
 const JBIN_KEY       = "$2a$10$kKoH/OuZTZ3zbishoFe/Nup7D/yA6ROUjpXeUGapLHOeFtO1q7Ine";
@@ -1024,7 +1177,7 @@ const EXTRAS = [
 ];
 const PACKAGES = [
   {
-    id:"basic", icon:"⚡", name:"Basic", tag:"Simple & Reliable",
+    id:"basic", name:"Basic", tag:"Simple & Reliable",
     price:"$5–$10", robux:"500–1K",
     baseUsdMin:5, baseUsdMax:10, baseRbx:750,
     desc:"Auto logs, basic moderation & clean embeds to get your server started.",
@@ -1035,16 +1188,16 @@ const PACKAGES = [
       "/embed","/say","/membercount","/sessionstartup","/sessionshutdown"],
     includedExtras:["logs"],
     features:[
-      {icon:"📋",text:"Auto logs (joins/leaves, deletes, edits, warns, kicks, bans)"},
-      {icon:"🛡️",text:"Basic moderation (mute, warn, kick, ban)"},
-      {icon:"⚡",text:"Prefix/slash commands (info, help, ping, etc.)"},
-      {icon:"🚔",text:"Basic ERLC-style patrol logs & session announcements"},
-      {icon:"⚙️",text:"Basic server configuration & setup"},
-      {icon:"🎨",text:"Clean embeds with any button type & color"},
+      "Auto logs — joins, leaves, deletes, edits, warns, kicks, bans",
+      "Basic moderation — mute, warn, kick, ban",
+      "Prefix & slash commands — info, help, ping, etc.",
+      "ERLC patrol logs & session announcements",
+      "Basic server configuration & setup",
+      "Clean embeds with any button type & color",
     ]
   },
   {
-    id:"advanced", icon:"🔥", name:"Advanced", tag:"For Active ERLC Servers",
+    id:"advanced", name:"Advanced", tag:"For Active ERLC Servers",
     price:"$15–$25", robux:"1.5K–2.5K",
     baseUsdMin:15, baseUsdMax:25, baseRbx:2000,
     desc:"Everything in Basic plus full ticket system, strike system & session tools.",
@@ -1062,16 +1215,16 @@ const PACKAGES = [
       "/rank","/leaderboard","/announce","/dm"],
     includedExtras:["logs","tickets"],
     features:[
-      {icon:"✅",text:"Everything in Basic"},
-      {icon:"🎫",text:"Full ticket system (support, reports, staff apps, etc.)"},
-      {icon:"⚖️",text:"Advanced moderation (strike system, reasons, case IDs, staff tools)"},
-      {icon:"🚀",text:"Session tools (start/end, pings, cooldowns, server code announcements)"},
-      {icon:"👥",text:"Staff utilities (member notes, quick actions, staff panel commands)"},
-      {icon:"🏗️",text:"Custom systems (dept requests, LOA forms, basic ranking tools)"},
+      "Everything in Basic",
+      "Full ticket system — support, reports, staff apps",
+      "Advanced moderation — strike system, case IDs, staff tools",
+      "Session tools — start/end, pings, cooldowns, server code",
+      "Staff utilities — member notes, quick actions, panel commands",
+      "Custom systems — dept requests, LOA forms, ranking tools",
     ]
   },
   {
-    id:"premium", icon:"💎", name:"Premium", tag:"Fully Custom Experience",
+    id:"premium", name:"Premium", tag:"Fully Custom Experience",
     price:"$30+", robux:"3K+",
     baseUsdMin:30, baseUsdMax:60, baseRbx:3500,
     desc:"Everything in Advanced plus a fully custom bot, web panel & advanced ERLC tools.",
@@ -1079,14 +1232,14 @@ const PACKAGES = [
     includedCmds:["all"],
     includedExtras:["logs","tickets","erlc","boost","vc","verify","xp"],
     features:[
-      {icon:"✅",text:"Everything in Advanced"},
-      {icon:"🤖",text:"Fully custom bot built around your server structure & branding"},
-      {icon:"🌐",text:"Connected website or web panel (dashboards, forms, logs view)"},
-      {icon:"🎮",text:"Advanced ERLC tools (multi-dept, call signs, patrol stats, activity tracking)"},
-      {icon:"⚡",text:"Custom commands, embeds & systems for your management"},
-      {icon:"🏆",text:"Priority support & faster updates during the build"},
-      {icon:"📊",text:"Custom server stats on Discord channels"},
-      {icon:"🔗",text:"Your own website for your server"},
+      "Everything in Advanced",
+      "Fully custom bot — built around your server structure & branding",
+      "Web panel — dashboards, forms, logs view",
+      "Advanced ERLC tools — multi-dept, call signs, patrol stats",
+      "Custom commands, embeds & systems for your management",
+      "Priority support & faster updates during the build",
+      "Custom server stats channels",
+      "Your own website for your server",
     ]
   },
 ];
@@ -1137,22 +1290,32 @@ async function getBinId() {
 async function jbinRead() {
   try {
     const id = await getBinId();
-    if (!id) return [];
+    if (!id) { console.error("No bin ID"); return []; }
     const res = await fetch(JBIN_BASE + "/b/" + id + "/latest", {
-      headers: {"X-Master-Key": JBIN_KEY}
+      headers: { "X-Master-Key": JBIN_KEY, "X-Bin-Meta": "false" }
     });
+    if (!res.ok) { console.error("jbinRead HTTP error:", res.status, await res.text()); return []; }
     const data = await res.json();
-    return Array.isArray(data.record && data.record.orders) ? data.record.orders : [];
-  } catch(e) { return []; }
+    const orders = data.record?.orders ?? (Array.isArray(data.record) ? data.record : []);
+    console.log("jbinRead: loaded", orders.length, "orders");
+    return Array.isArray(orders) ? orders : [];
+  } catch(e) { console.error("jbinRead failed:", e); return []; }
 }
 async function jbinWrite(orders) {
   const id = await getBinId();
-  if (!id) return;
-  await fetch(JBIN_BASE + "/b/" + id, {
+  if (!id) { console.error("No bin ID for write"); return false; }
+  const res = await fetch(JBIN_BASE + "/b/" + id, {
     method: "PUT",
-    headers: {"Content-Type":"application/json","X-Master-Key":JBIN_KEY},
-    body: JSON.stringify({orders})
+    headers: { "Content-Type": "application/json", "X-Master-Key": JBIN_KEY },
+    body: JSON.stringify({ orders })
   });
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("jbinWrite failed:", res.status, err);
+    return false;
+  }
+  console.log("jbinWrite: saved", orders.length, "orders");
+  return true;
 }
 async function jbinAddOrder(order) {
   const lean = Object.assign({}, order);
@@ -1245,32 +1408,44 @@ function goStep(n) {
   setTimeout(() => observeReveals(), 120);
 }
 function renderPackages() {
+  const ROBUX_ICON = `<svg class='pkg-robux-icon' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'><rect width='20' height='20' rx='5' fill='rgba(250,176,5,0.12)'/><text x='10' y='14.5' text-anchor='middle' font-size='10' font-weight='900' fill='rgba(250,176,5,0.95)' font-family='system-ui,sans-serif'>R$</text></svg>`;
+  const CHECK_ICON = `<svg class='pkg-feat-check' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6.5' stroke='currentColor' stroke-width='1.2'/><polyline points='5.2,8.4 7.2,10.4 11.2,5.8' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+  const CHECK_ACTIVE = `<svg class='pkg-feat-check' viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6.5' fill='rgba(99,144,255,0.15)' stroke='#6390ff' stroke-width='1.2'/><polyline points='5.2,8.4 7.2,10.4 11.2,5.8' stroke='#6390ff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+
   document.getElementById("pkg-grid").innerHTML = PACKAGES.map(p => {
     const isSelected = state.selectedPkg === p.id;
+    const checkIcon = isSelected ? CHECK_ACTIVE : CHECK_ICON;
     return `
     <div class="pkg-card${isSelected ? " selected" : ""}${p.popular ? " popular" : ""}"
          onclick="selectPkg('${p.id}')">
-      ${p.popular ? '<div class="pkg-card-pop">✦ Most Popular</div>' : ""}
-      <div class="pkg-card-head">
-        <div class="pkg-icon">${p.icon}</div>
-        <div class="pkg-head-text">
-          <div class="pkg-name">${p.name}</div>
-          <div class="pkg-tag">${p.tag}</div>
+      ${p.popular ? '<div class="pkg-card-pop">Most Popular</div>' : ""}
+      <div class="pkg-body">
+        <div class="pkg-card-head">
+          <div class="pkg-head-text">
+            <div class="pkg-name">${p.name}</div>
+            <div class="pkg-tag">${p.tag}</div>
+          </div>
+          <div class="pkg-pricing">
+            <div class="pkg-price">${p.price}</div>
+            <div class="pkg-robux-row">
+              ${ROBUX_ICON}
+              <span class="pkg-robux-val">${p.robux}</span>
+            </div>
+          </div>
         </div>
+        <div class="pkg-divider"></div>
+        <ul class="pkg-features">
+          ${p.features.map(f => `
+            <li class="pkg-feat">${checkIcon}<span>${f}</span></li>
+          `).join("")}
+        </ul>
+        <button class="pkg-select-btn${isSelected ? " active" : ""}">
+          ${isSelected
+            ? `<svg width='12' height='12' viewBox='0 0 16 16' fill='none'><polyline points='3,8.5 6.5,12 13,5' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg> Selected`
+            : "Select Package"
+          }
+        </button>
       </div>
-      <div class="pkg-pricing">
-        <div class="pkg-price">$${p.price}</div>
-        <div class="pkg-robux">🪙 ${p.robux}</div>
-      </div>
-      <div class="pkg-divider"></div>
-      <div class="pkg-features">
-        ${p.features.map(f => `
-          <div class="pkg-feat">
-            <span class="pkg-feat-icon">${f.icon}</span>
-            <span class="pkg-feat-text">${f.text}</span>
-          </div>`).join("")}
-      </div>
-      <div class="pkg-select-hint">${isSelected ? "✓ Selected" : "Select Package"}</div>
     </div>`;
   }).join("");
 }
@@ -1292,10 +1467,11 @@ function renderExtras() {
     if (isIncluded) cls += " included";
     else if (isSelected) cls += " selected";
     const clickHandler = isIncluded ? "" : `onclick="toggleExtra('${ex.id}')"`;
+    const badgeLabel = isIncluded ? "Included" : ex.badge;
     return `<div class="${cls}" ${clickHandler}>
       <div class="extra-card-top">
         <div class="extra-card-name">${ex.name}</div>
-        <div class="extra-card-badge">${isIncluded ? "✓ Included" : ex.badge}</div>
+        <div class="extra-card-badge">${badgeLabel}</div>
       </div>
       <div class="extra-card-desc">${ex.desc}</div>
     </div>`;
@@ -1630,11 +1806,30 @@ async function saveOrderLocally(orderData) {
     status:      "pending",
     created_at:  new Date().toISOString()
   };
+
+  // Save to localStorage immediately
   const key = "eu_orders_" + window._currentUser.id;
   const local = JSON.parse(localStorage.getItem(key) || "[]");
   local.unshift(order);
   localStorage.setItem(key, JSON.stringify(local));
-  try { await jbinAddOrder(order); } catch(e) { console.warn("JSONBin save failed:", e); }
+
+  // Save to JSONBin with retry
+  let saved = false;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await jbinAddOrder(order);
+      console.log("Order saved to JSONBin on attempt", attempt);
+      saved = true;
+      break;
+    } catch(e) {
+      console.warn(`JSONBin save attempt ${attempt} failed:`, e);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+  }
+
+  if (!saved) {
+    console.error("All JSONBin save attempts failed — order only in localStorage");
+  }
 }
 function dataURLtoBlob(dataUrl) {
   const [header, data] = dataUrl.split(",");
@@ -1854,6 +2049,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-</script>
+
+
+
+
+</script></script>
 </body>
 </html>
